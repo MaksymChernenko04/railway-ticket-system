@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Entity
 @Table(name = "user")
 @NoArgsConstructor
@@ -34,6 +36,12 @@ public class User {
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, optional = false)
     private UserProfile userProfile;
+
+    @OneToMany(mappedBy = "passenger", cascade = CascadeType.ALL)
+    private List<Passenger> passengers;
+
+    @OneToMany(mappedBy = "order")
+    private List<Order> orders;
 
     public void setUserProfile(UserProfile userProfile) {
         this.userProfile = userProfile;
