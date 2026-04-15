@@ -1,4 +1,4 @@
-package com.maksymchernenko.railwayticketsystem.model;
+package com.maksymchernenko.railwayticketsystem.model.reference;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

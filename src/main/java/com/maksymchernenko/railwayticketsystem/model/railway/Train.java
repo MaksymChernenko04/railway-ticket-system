@@ -1,20 +1,19 @@
-package com.maksymchernenko.railwayticketsystem.model;
+package com.maksymchernenko.railwayticketsystem.model.railway;
 
+import com.maksymchernenko.railwayticketsystem.model.reference.TrainType;
 import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.Instant;
-
 @Entity
-@Table(name = "refresh_token")
+@Table(name = "train")
 @NoArgsConstructor
 @Getter
 @Setter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class RefreshToken {
+public class Train {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,12 +21,11 @@ public class RefreshToken {
     private Long id;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "type_code", nullable = false)
+    private TrainType type;
 
-    @Column(name = "token_hash", nullable = false)
-    private String tokenHash;
+    @Column(nullable = false, unique = true)
+    private String number;
 
-    @Column(name = "expires_at_utc", nullable = false)
-    private Instant expiresAtUtc;
+    private String name;
 }

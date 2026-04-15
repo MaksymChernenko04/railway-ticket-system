@@ -1,5 +1,6 @@
-package com.maksymchernenko.railwayticketsystem.model;
+package com.maksymchernenko.railwayticketsystem.model.vehicle;
 
+import com.maksymchernenko.railwayticketsystem.model.reference.CarType;
 import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
