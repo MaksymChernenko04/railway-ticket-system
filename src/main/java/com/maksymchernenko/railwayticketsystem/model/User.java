@@ -1,0 +1,44 @@
+package com.maksymchernenko.railwayticketsystem.model;
+
+import jakarta.persistence.*;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@Table(name = "user")
+@NoArgsConstructor
+@Getter
+@Setter
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
+    private Long id;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "role_name")
+    private Role role;
+
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @Column(name = "password_hash")
+    private String passwordHash;
+
+    @Column(nullable = false)
+    private String provider;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, optional = false)
+    private UserProfile userProfile;
+
+    public void setUserProfile(UserProfile userProfile) {
+        this.userProfile = userProfile;
+        if (userProfile != null) {
+            userProfile.setUser(this);
+        }
+    }
+}
