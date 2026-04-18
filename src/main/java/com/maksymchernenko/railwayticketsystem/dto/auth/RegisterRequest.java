@@ -1,4 +1,4 @@
-package com.maksymchernenko.railwayticketsystem.dto;
+package com.maksymchernenko.railwayticketsystem.dto.auth;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

@@ -1,6 +1,9 @@
 package com.maksymchernenko.railwayticketsystem.exception;
 
 import com.maksymchernenko.railwayticketsystem.dto.ErrorResponse;
+import com.maksymchernenko.railwayticketsystem.exception.auth.InvalidRefreshTokenException;
+import com.maksymchernenko.railwayticketsystem.exception.auth.RoleNotConfiguredException;
+import com.maksymchernenko.railwayticketsystem.exception.auth.UserAlreadyExistsException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

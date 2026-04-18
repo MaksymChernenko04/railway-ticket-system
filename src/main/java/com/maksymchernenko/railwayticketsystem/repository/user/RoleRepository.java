@@ -1,4 +1,4 @@
-package com.maksymchernenko.railwayticketsystem.repository;
+package com.maksymchernenko.railwayticketsystem.repository.user;
 
 import com.maksymchernenko.railwayticketsystem.model.reference.Role;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -1,4 +1,6 @@
-package com.maksymchernenko.railwayticketsystem.dto;
+package com.maksymchernenko.railwayticketsystem.dto.auth;
+
+import com.maksymchernenko.railwayticketsystem.dto.UserResponse;
 
 public record AuthResponse(
         String accessToken,
