@@ -4,6 +4,8 @@ import com.maksymchernenko.railwayticketsystem.dto.ErrorResponse;
 import com.maksymchernenko.railwayticketsystem.exception.auth.InvalidRefreshTokenException;
 import com.maksymchernenko.railwayticketsystem.exception.auth.RoleNotConfiguredException;
 import com.maksymchernenko.railwayticketsystem.exception.auth.UserAlreadyExistsException;
+import com.maksymchernenko.railwayticketsystem.exception.station.CountryNotFoundException;
+import com.maksymchernenko.railwayticketsystem.exception.station.StationAlreadyExistsException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,11 +44,17 @@ public class ApiExceptionHandler {
     @ExceptionHandler({
             UserAlreadyExistsException.class,
             InvalidRefreshTokenException.class,
+            StationAlreadyExistsException.class,
             BadCredentialsException.class,
             UsernameNotFoundException.class
     })
     public ResponseEntity<ErrorResponse> handleBadRequest(RuntimeException exception, HttpServletRequest request) {
         return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request, null);
+    }
+
+    @ExceptionHandler(CountryNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(RuntimeException exception, HttpServletRequest request) {
+        return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request, null);
     }
 
     @ExceptionHandler(RoleNotConfiguredException.class)
