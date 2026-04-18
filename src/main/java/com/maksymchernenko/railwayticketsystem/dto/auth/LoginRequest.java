@@ -2,9 +2,15 @@ package com.maksymchernenko.railwayticketsystem.dto.auth;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 public record LoginRequest(
-        @NotBlank @Email String email,
-        @NotBlank String password
-) {
-}
+        @NotBlank(message = "Email is required")
+        @Email(message = "Email format is invalid")
+        @Size(max = 255, message = "Email must be less than 255 characters")
+        String email,
+
+        @NotBlank(message = "Password is required")
+        @Size(max = 255, message = "Password must be less than 255 characters")
+        String password
+) {}
