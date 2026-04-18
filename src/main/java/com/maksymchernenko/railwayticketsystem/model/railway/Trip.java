@@ -34,9 +34,9 @@ public class Trip {
     @Column(name = "departure_at_utc", nullable = false)
     private Instant departureAtUtc;
 
-    @OneToMany(mappedBy = "tripStop", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TripStop> tripStops;
 
-    @OneToMany(mappedBy = "tripCar", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL)
     private List<TripCar> tripCars;
 }

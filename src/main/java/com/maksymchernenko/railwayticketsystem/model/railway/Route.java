@@ -35,6 +35,6 @@ public class Route {
     @JoinColumn(name = "currency_code", nullable = false)
     private Currency currency;
 
-    @OneToMany(mappedBy = "routeStop")
+    @OneToMany(mappedBy = "route", cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     private List<RouteStop> routeStops;
 }

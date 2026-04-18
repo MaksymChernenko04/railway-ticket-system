@@ -46,10 +46,10 @@ public class Order {
     @JoinColumn(name = "currency_code", nullable = false)
     private Currency currency;
 
-    @OneToMany(mappedBy = "ticket")
+    @OneToMany(mappedBy = "order")
     private List<Ticket> tickets;
 
-    @OneToMany(mappedBy = "payment")
+    @OneToMany(mappedBy = "order")
     private List<Payment> payments;
 
     public enum Status {

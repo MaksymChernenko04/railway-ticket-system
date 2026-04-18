@@ -40,10 +40,10 @@ public class User {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, optional = false)
     private UserProfile userProfile;
 
-    @OneToMany(mappedBy = "passenger", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Passenger> passengers;
 
-    @OneToMany(mappedBy = "order")
+    @OneToMany(mappedBy = "user")
     private List<Order> orders;
 
     public void setUserProfile(UserProfile userProfile) {
