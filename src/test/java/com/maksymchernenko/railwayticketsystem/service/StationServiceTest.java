@@ -54,7 +54,7 @@ public class StationServiceTest {
         station.setCountry(country);
         station.setTimezone("Europe/Kyiv");
         station.setAddress("Vokzalna Sq.");
-        station.setAccessible(true);
+        station.setIsAccessible(true);
 
         when(stationRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(station), pageable, 1));
 
@@ -84,7 +84,7 @@ public class StationServiceTest {
         savedStation.setCountry(country);
         savedStation.setTimezone("Europe/Kyiv");
         savedStation.setAddress("Vokzalna Sq.");
-        savedStation.setAccessible(true);
+        savedStation.setIsAccessible(true);
 
         when(stationRepository.existsByCountry_CodeIgnoreCaseAndNameIgnoreCase("UA", "Kyiv-Pasazhyrskyi"))
                 .thenReturn(false);
@@ -101,7 +101,7 @@ public class StationServiceTest {
         assertThat(stationToSave.getCountry()).isSameAs(country);
         assertThat(stationToSave.getTimezone()).isEqualTo("Europe/Kyiv");
         assertThat(stationToSave.getAddress()).isEqualTo("Vokzalna Sq.");
-        assertThat(stationToSave.getAccessible()).isTrue();
+        assertThat(stationToSave.getIsAccessible()).isTrue();
         assertThat(result).isEqualTo(new StationResponse(
                 10L,
                 "Kyiv-Pasazhyrskyi",

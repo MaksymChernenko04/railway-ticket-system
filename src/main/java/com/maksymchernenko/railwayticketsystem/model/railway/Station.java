@@ -32,6 +32,6 @@ public class Station {
 
     private String address;
 
-    @Column(nullable = false)
-    private Boolean accessible;
+    @Column(name = "is_accessible", nullable = false)
+    private Boolean isAccessible;
 }

@@ -46,9 +46,14 @@ public class StationService {
         station.setCountry(country);
         station.setTimezone(request.timezone().trim());
         station.setAddress(request.address() == null ? null : request.address().trim());
-        station.setAccessible(request.accessible());
+        station.setIsAccessible(request.accessible());
 
         return toResponse(stationRepository.save(station));
+    }
+
+    @Transactional
+    public void deleteStation(Long stationId) {
+        stationRepository.deleteById(stationId);
     }
 
     private StationResponse toResponse(Station station) {
@@ -58,7 +63,7 @@ public class StationService {
                 station.getCountry().getCode(),
                 station.getTimezone(),
                 station.getAddress(),
-                station.getAccessible()
+                station.getIsAccessible()
         );
     }
 }
