@@ -1,0 +1,8 @@
+package com.maksymchernenko.railwayticketsystem.exception.station;
+
+public class CountryNotFoundException extends RuntimeException {
+
+    public CountryNotFoundException(String message) {
+        super(message);
+    }
+}
