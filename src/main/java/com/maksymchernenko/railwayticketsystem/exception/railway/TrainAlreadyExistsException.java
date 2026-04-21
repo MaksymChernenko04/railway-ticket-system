@@ -1,4 +1,4 @@
-package com.maksymchernenko.railwayticketsystem.exception;
+package com.maksymchernenko.railwayticketsystem.exception.railway;
 
 public class TrainAlreadyExistsException extends RuntimeException {
     public TrainAlreadyExistsException(String message) {

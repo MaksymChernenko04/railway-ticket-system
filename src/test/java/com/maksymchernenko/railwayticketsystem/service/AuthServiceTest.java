@@ -1,6 +1,6 @@
 package com.maksymchernenko.railwayticketsystem.service;
 
-import com.maksymchernenko.railwayticketsystem.dto.UserResponse;
+import com.maksymchernenko.railwayticketsystem.dto.auth.UserResponse;
 import com.maksymchernenko.railwayticketsystem.dto.auth.AuthResponse;
 import com.maksymchernenko.railwayticketsystem.dto.auth.LoginRequest;
 import com.maksymchernenko.railwayticketsystem.dto.auth.RefreshTokenRequest;
@@ -9,12 +9,12 @@ import com.maksymchernenko.railwayticketsystem.exception.auth.InvalidRefreshToke
 import com.maksymchernenko.railwayticketsystem.exception.auth.RoleNotConfiguredException;
 import com.maksymchernenko.railwayticketsystem.exception.auth.UserAlreadyExistsException;
 import com.maksymchernenko.railwayticketsystem.model.reference.Role;
-import com.maksymchernenko.railwayticketsystem.model.user.RefreshToken;
-import com.maksymchernenko.railwayticketsystem.model.user.User;
-import com.maksymchernenko.railwayticketsystem.model.user.UserProfile;
-import com.maksymchernenko.railwayticketsystem.repository.user.RefreshTokenRepository;
-import com.maksymchernenko.railwayticketsystem.repository.user.RoleRepository;
-import com.maksymchernenko.railwayticketsystem.repository.user.UserRepository;
+import com.maksymchernenko.railwayticketsystem.model.auth.RefreshToken;
+import com.maksymchernenko.railwayticketsystem.model.auth.User;
+import com.maksymchernenko.railwayticketsystem.model.auth.UserProfile;
+import com.maksymchernenko.railwayticketsystem.repository.auth.RefreshTokenRepository;
+import com.maksymchernenko.railwayticketsystem.repository.auth.RoleRepository;
+import com.maksymchernenko.railwayticketsystem.repository.auth.UserRepository;
 import com.maksymchernenko.railwayticketsystem.security.CustomUserDetails;
 import com.maksymchernenko.railwayticketsystem.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;

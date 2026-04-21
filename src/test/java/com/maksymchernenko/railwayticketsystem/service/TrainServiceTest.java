@@ -1,9 +1,9 @@
 package com.maksymchernenko.railwayticketsystem.service;
 
-import com.maksymchernenko.railwayticketsystem.dto.TrainCreateRequest;
-import com.maksymchernenko.railwayticketsystem.dto.TrainResponse;
-import com.maksymchernenko.railwayticketsystem.exception.TrainAlreadyExistsException;
-import com.maksymchernenko.railwayticketsystem.exception.TrainTypeNotFoundException;
+import com.maksymchernenko.railwayticketsystem.dto.railway.TrainCreateRequest;
+import com.maksymchernenko.railwayticketsystem.dto.railway.TrainResponse;
+import com.maksymchernenko.railwayticketsystem.exception.railway.TrainAlreadyExistsException;
+import com.maksymchernenko.railwayticketsystem.exception.railway.TrainTypeNotFoundException;
 import com.maksymchernenko.railwayticketsystem.model.railway.Train;
 import com.maksymchernenko.railwayticketsystem.model.reference.TrainType;
 import com.maksymchernenko.railwayticketsystem.repository.railway.TrainRepository;

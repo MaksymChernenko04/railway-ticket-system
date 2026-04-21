@@ -1,6 +1,6 @@
 package com.maksymchernenko.railwayticketsystem.config;
 
-import com.maksymchernenko.railwayticketsystem.dto.ErrorResponse;
+import com.maksymchernenko.railwayticketsystem.dto.common.ErrorResponse;
 import com.maksymchernenko.railwayticketsystem.security.CustomUserDetailsService;
 import com.maksymchernenko.railwayticketsystem.security.JwtAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;

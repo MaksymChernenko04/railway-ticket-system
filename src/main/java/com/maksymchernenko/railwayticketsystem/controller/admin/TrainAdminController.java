@@ -1,7 +1,7 @@
-package com.maksymchernenko.railwayticketsystem.controller;
+package com.maksymchernenko.railwayticketsystem.controller.admin;
 
-import com.maksymchernenko.railwayticketsystem.dto.TrainCreateRequest;
-import com.maksymchernenko.railwayticketsystem.dto.TrainResponse;
+import com.maksymchernenko.railwayticketsystem.dto.railway.TrainCreateRequest;
+import com.maksymchernenko.railwayticketsystem.dto.railway.TrainResponse;
 import com.maksymchernenko.railwayticketsystem.service.TrainService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

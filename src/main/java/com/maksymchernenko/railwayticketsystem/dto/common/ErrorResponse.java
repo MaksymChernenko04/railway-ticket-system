@@ -1,4 +1,4 @@
-package com.maksymchernenko.railwayticketsystem.dto;
+package com.maksymchernenko.railwayticketsystem.dto.common;
 
 import java.util.Map;
 

@@ -1,10 +1,10 @@
-package com.maksymchernenko.railwayticketsystem.controller;
+package com.maksymchernenko.railwayticketsystem.controller.common;
 
 import com.maksymchernenko.railwayticketsystem.dto.auth.AuthResponse;
 import com.maksymchernenko.railwayticketsystem.dto.auth.LoginRequest;
 import com.maksymchernenko.railwayticketsystem.dto.auth.RefreshTokenRequest;
 import com.maksymchernenko.railwayticketsystem.dto.auth.RegisterRequest;
-import com.maksymchernenko.railwayticketsystem.dto.UserResponse;
+import com.maksymchernenko.railwayticketsystem.dto.auth.UserResponse;
 import com.maksymchernenko.railwayticketsystem.security.CustomUserDetails;
 import com.maksymchernenko.railwayticketsystem.service.AuthService;
 import jakarta.validation.Valid;

@@ -1,9 +1,9 @@
 package com.maksymchernenko.railwayticketsystem.service;
 
-import com.maksymchernenko.railwayticketsystem.dto.RouteCreateRequest;
-import com.maksymchernenko.railwayticketsystem.dto.RouteResponse;
-import com.maksymchernenko.railwayticketsystem.exception.CurrencyNotFoundException;
-import com.maksymchernenko.railwayticketsystem.exception.RouteAlreadyExistsException;
+import com.maksymchernenko.railwayticketsystem.dto.railway.RouteCreateRequest;
+import com.maksymchernenko.railwayticketsystem.dto.railway.RouteResponse;
+import com.maksymchernenko.railwayticketsystem.exception.railway.CurrencyNotFoundException;
+import com.maksymchernenko.railwayticketsystem.exception.railway.RouteAlreadyExistsException;
 import com.maksymchernenko.railwayticketsystem.model.railway.Route;
 import com.maksymchernenko.railwayticketsystem.model.reference.Currency;
 import com.maksymchernenko.railwayticketsystem.repository.railway.RouteRepository;

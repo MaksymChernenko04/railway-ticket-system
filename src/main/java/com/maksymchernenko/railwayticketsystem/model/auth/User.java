@@ -1,4 +1,4 @@
-package com.maksymchernenko.railwayticketsystem.model.user;
+package com.maksymchernenko.railwayticketsystem.model.auth;
 
 import com.maksymchernenko.railwayticketsystem.model.booking.Order;
 import com.maksymchernenko.railwayticketsystem.model.booking.Passenger;

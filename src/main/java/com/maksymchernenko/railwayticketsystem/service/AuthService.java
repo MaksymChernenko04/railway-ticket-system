@@ -1,18 +1,14 @@
 package com.maksymchernenko.railwayticketsystem.service;
 
-import com.maksymchernenko.railwayticketsystem.dto.*;
-import com.maksymchernenko.railwayticketsystem.dto.auth.AuthResponse;
-import com.maksymchernenko.railwayticketsystem.dto.auth.LoginRequest;
-import com.maksymchernenko.railwayticketsystem.dto.auth.RefreshTokenRequest;
-import com.maksymchernenko.railwayticketsystem.dto.auth.RegisterRequest;
+import com.maksymchernenko.railwayticketsystem.dto.auth.*;
 import com.maksymchernenko.railwayticketsystem.exception.auth.InvalidRefreshTokenException;
 import com.maksymchernenko.railwayticketsystem.exception.auth.RoleNotConfiguredException;
 import com.maksymchernenko.railwayticketsystem.exception.auth.UserAlreadyExistsException;
 import com.maksymchernenko.railwayticketsystem.model.reference.Role;
-import com.maksymchernenko.railwayticketsystem.model.user.*;
-import com.maksymchernenko.railwayticketsystem.repository.user.RefreshTokenRepository;
-import com.maksymchernenko.railwayticketsystem.repository.user.RoleRepository;
-import com.maksymchernenko.railwayticketsystem.repository.user.UserRepository;
+import com.maksymchernenko.railwayticketsystem.model.auth.*;
+import com.maksymchernenko.railwayticketsystem.repository.auth.RefreshTokenRepository;
+import com.maksymchernenko.railwayticketsystem.repository.auth.RoleRepository;
+import com.maksymchernenko.railwayticketsystem.repository.auth.UserRepository;
 import com.maksymchernenko.railwayticketsystem.security.CustomUserDetails;
 import com.maksymchernenko.railwayticketsystem.security.JwtService;
 import lombok.RequiredArgsConstructor;

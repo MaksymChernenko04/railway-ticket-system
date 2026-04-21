@@ -1,6 +1,6 @@
 package com.maksymchernenko.railwayticketsystem.security;
 
-import com.maksymchernenko.railwayticketsystem.model.user.User;
+import com.maksymchernenko.railwayticketsystem.model.auth.User;
 import jakarta.annotation.Nonnull;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;

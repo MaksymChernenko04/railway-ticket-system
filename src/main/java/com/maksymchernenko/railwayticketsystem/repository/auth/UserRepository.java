@@ -1,6 +1,6 @@
-package com.maksymchernenko.railwayticketsystem.repository.user;
+package com.maksymchernenko.railwayticketsystem.repository.auth;
 
-import com.maksymchernenko.railwayticketsystem.model.user.User;
+import com.maksymchernenko.railwayticketsystem.model.auth.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

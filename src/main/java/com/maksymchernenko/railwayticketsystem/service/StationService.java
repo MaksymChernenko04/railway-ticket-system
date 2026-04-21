@@ -1,9 +1,9 @@
 package com.maksymchernenko.railwayticketsystem.service;
 
-import com.maksymchernenko.railwayticketsystem.dto.StationCreateRequest;
-import com.maksymchernenko.railwayticketsystem.dto.StationResponse;
-import com.maksymchernenko.railwayticketsystem.exception.station.CountryNotFoundException;
-import com.maksymchernenko.railwayticketsystem.exception.station.StationAlreadyExistsException;
+import com.maksymchernenko.railwayticketsystem.dto.railway.StationCreateRequest;
+import com.maksymchernenko.railwayticketsystem.dto.railway.StationResponse;
+import com.maksymchernenko.railwayticketsystem.exception.railway.CountryNotFoundException;
+import com.maksymchernenko.railwayticketsystem.exception.railway.StationAlreadyExistsException;
 import com.maksymchernenko.railwayticketsystem.model.railway.Station;
 import com.maksymchernenko.railwayticketsystem.model.reference.Country;
 import com.maksymchernenko.railwayticketsystem.repository.railway.StationRepository;

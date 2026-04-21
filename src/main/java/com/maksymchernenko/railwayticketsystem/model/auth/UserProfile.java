@@ -1,4 +1,4 @@
-package com.maksymchernenko.railwayticketsystem.model.user;
+package com.maksymchernenko.railwayticketsystem.model.auth;
 
 import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;

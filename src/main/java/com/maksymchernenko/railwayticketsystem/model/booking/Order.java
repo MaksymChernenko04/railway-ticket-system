@@ -1,7 +1,7 @@
 package com.maksymchernenko.railwayticketsystem.model.booking;
 
 import com.maksymchernenko.railwayticketsystem.model.reference.Currency;
-import com.maksymchernenko.railwayticketsystem.model.user.User;
+import com.maksymchernenko.railwayticketsystem.model.auth.User;
 import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
