@@ -1,0 +1,36 @@
+package com.maksymchernenko.railwayticketsystem.controller;
+
+import com.maksymchernenko.railwayticketsystem.dto.TrainCreateRequest;
+import com.maksymchernenko.railwayticketsystem.dto.TrainResponse;
+import com.maksymchernenko.railwayticketsystem.service.TrainService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/admin/trains")
+@RequiredArgsConstructor
+public class TrainAdminController {
+
+    private final TrainService trainService;
+
+    @GetMapping
+    public Page<TrainResponse> getTrains(Pageable pageable) {
+        return trainService.getAllTrains(pageable);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public TrainResponse createTrain(@Valid @RequestBody TrainCreateRequest request) {
+        return trainService.createTrain(request);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteTrain(@PathVariable Long id) {
+        trainService.deleteTrain(id);
+    }
+}
