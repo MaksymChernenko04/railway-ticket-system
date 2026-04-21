@@ -1,12 +1,16 @@
 package com.maksymchernenko.railwayticketsystem.service;
 
+import com.maksymchernenko.railwayticketsystem.dto.RouteCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.RouteResponse;
+import com.maksymchernenko.railwayticketsystem.exception.CurrencyNotFoundException;
+import com.maksymchernenko.railwayticketsystem.exception.RouteAlreadyExistsException;
 import com.maksymchernenko.railwayticketsystem.model.railway.Route;
 import com.maksymchernenko.railwayticketsystem.model.reference.Currency;
 import com.maksymchernenko.railwayticketsystem.repository.railway.RouteRepository;
 import com.maksymchernenko.railwayticketsystem.repository.reference.CurrencyRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -17,9 +21,12 @@ import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class RouteServiceTest {
@@ -53,5 +60,84 @@ public class RouteServiceTest {
 
         assertThat(routeResponse.getContent())
                 .containsExactly(new RouteResponse(1L, "R1", "Route 1", new BigDecimal("500.5"), "PLN"));
+    }
+
+    @Test
+    public void createRouteShouldTrimValuesNormalizeCurrencyCodeAndReturnResponse() {
+        RouteCreateRequest request = new RouteCreateRequest(
+                "  R1  ",
+                "  Route 1  ",
+                new BigDecimal("500.5"),
+                " pln "
+        );
+
+        Currency currency = new Currency();
+        currency.setCode("PLN");
+
+        Route savedRoute = new Route();
+        savedRoute.setId(1L);
+        savedRoute.setNumber("R1");
+        savedRoute.setName("Route 1");
+        savedRoute.setBasePrice(new BigDecimal("500.5"));
+        savedRoute.setCurrency(currency);
+
+        when(routeRepository.existsByNumberIgnoreCase("R1")).thenReturn(false);
+        when(currencyRepository.findById("PLN")).thenReturn(Optional.of(currency));
+        when(routeRepository.save(any(Route.class))).thenReturn(savedRoute);
+
+        RouteResponse result = routeService.createRoute(request);
+
+        ArgumentCaptor<Route> routeCaptor = ArgumentCaptor.forClass(Route.class);
+        verify(routeRepository).save(routeCaptor.capture());
+        Route routeToSave = routeCaptor.getValue();
+
+        assertThat(routeToSave.getNumber()).isEqualTo("R1");
+        assertThat(routeToSave.getName()).isEqualTo("Route 1");
+        assertThat(routeToSave.getBasePrice()).isEqualTo(new BigDecimal("500.5"));
+        assertThat(routeToSave.getCurrency()).isSameAs(currency);
+        assertThat(result).isEqualTo(new RouteResponse(
+                1L,
+                "R1",
+                "Route 1",
+                new BigDecimal("500.5"),
+                "PLN"));
+    }
+
+    @Test
+    public void createRouteShouldThrowWhenRouteAlreadyExists() {
+        RouteCreateRequest request = new RouteCreateRequest(
+                "R1",
+                "Route 1",
+                new BigDecimal("500.5"),
+                "PLN"
+        );
+
+        when(routeRepository.existsByNumberIgnoreCase("R1")).thenReturn(true);
+
+        assertThatThrownBy(() -> routeService.createRoute(request))
+                .isInstanceOf(RouteAlreadyExistsException.class)
+                .hasMessage("Route with this number already exists");
+
+        verify(currencyRepository, never()).findById(any());
+        verify(routeRepository, never()).save(any());
+    }
+
+    @Test
+    public void createRouteShouldThrowWhenCurrencyDoesNotExist() {
+        RouteCreateRequest request = new RouteCreateRequest(
+                "R1",
+                "Route 1",
+                new BigDecimal("500.5"),
+                "PLN"
+        );
+
+        when(routeRepository.existsByNumberIgnoreCase("R1")).thenReturn(false);
+        when(currencyRepository.findById("PLN")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> routeService.createRoute(request))
+                .isInstanceOf(CurrencyNotFoundException.class)
+                .hasMessage("Currency not found: PLN");
+
+        verify(routeRepository, never()).save(any());
     }
 }
