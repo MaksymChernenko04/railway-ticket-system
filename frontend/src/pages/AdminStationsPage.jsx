@@ -1,4 +1,3 @@
-import LogoutIcon from "@mui/icons-material/Logout";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import TrainIcon from "@mui/icons-material/Train";
 import {
@@ -35,7 +34,7 @@ const emptyForm = {
 };
 
 export function AdminStationsPage() {
-  const { authorizedGet, authorizedPost, authorizedDelete, logout, user } = useAuth();
+  const { authorizedGet, authorizedPost, authorizedDelete, user } = useAuth();
   const [stationsPage, setStationsPage] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [feedback, setFeedback] = useState("");
@@ -72,7 +71,6 @@ export function AdminStationsPage() {
     try {
       await authorizedPost("/api/admin/stations", {
         ...form,
-        countryCode: form.countryCode.trim().toUpperCase(),
       });
       setFeedback("Station created.");
       setForm(emptyForm);
@@ -152,10 +150,6 @@ export function AdminStationsPage() {
                     </Typography>
                   </Box>
                 </Stack>
-
-                <Button variant="outlined" color="inherit" startIcon={<LogoutIcon />} onClick={logout}>
-                  Logout
-                </Button>
               </Stack>
             </CardContent>
           </Card>
@@ -193,7 +187,7 @@ export function AdminStationsPage() {
                     slotProps={{
                       htmlInput: { maxLength: 8 },
                     }}
-                    placeholder="PL"
+                    placeholder="UA"
                     required
                     fullWidth
                   />
@@ -223,7 +217,6 @@ export function AdminStationsPage() {
                     label="Accessible station"
                   />
 
-                  {feedback ? <Alert severity="success">{feedback}</Alert> : null}
                   {error ? <Alert severity="error">{error}</Alert> : null}
 
                   <Button type="submit" variant="contained" size="large" disabled={isSubmitting}>
@@ -254,6 +247,8 @@ export function AdminStationsPage() {
                     </Button>
                   </Stack>
 
+                  {feedback ? <Alert severity="success" onClose={() => setFeedback("")}>{feedback}</Alert> : null}
+
                   {isLoading ? (
                     <Box sx={{ py: 8, display: "grid", placeItems: "center" }}>
                       <Stack spacing={2} alignItems="center">
@@ -272,6 +267,7 @@ export function AdminStationsPage() {
                               <TableCell>Name</TableCell>
                               <TableCell>Country</TableCell>
                               <TableCell>Timezone</TableCell>
+                              <TableCell>Address</TableCell>
                               <TableCell>Accessible</TableCell>
                               <TableCell>Action</TableCell>
                             </TableRow>
@@ -282,6 +278,7 @@ export function AdminStationsPage() {
                                 <TableCell>{station.name}</TableCell>
                                 <TableCell>{station.countryCode}</TableCell>
                                 <TableCell>{station.timezone}</TableCell>
+                                <TableCell>{station.address}</TableCell>
                                 <TableCell>
                                   <Chip
                                     size="small"
