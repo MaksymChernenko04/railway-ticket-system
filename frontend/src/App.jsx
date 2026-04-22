@@ -7,6 +7,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { WelcomePage } from "./pages/WelcomePage";
 import { AdminStationsPage } from "./pages/AdminStationsPage";
+import { AdminRoutesPage } from "./pages/AdminRoutesPage.jsx";
 
 function HomeRedirect() {
   const { user } = useAuth();
@@ -37,6 +38,16 @@ export default function App() {
             </AppLayout>
           </ProtectedRoute>
         }
+      />
+      <Route
+          path="/admin/routes"
+          element={
+              <ProtectedRoute requiredRole="ADMIN">
+                  <AppLayout>
+                      <AdminRoutesPage />
+                  </AppLayout>
+              </ProtectedRoute>
+          }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

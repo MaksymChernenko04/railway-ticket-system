@@ -80,6 +80,7 @@ export function AppLayout({ children }) {
               {!isAuthenticated ? <NavButton to="/register">Register</NavButton> : null}
               {isAuthenticated ? <NavButton to="/welcome">Welcome</NavButton> : null}
               {user?.role === "ADMIN" ? <NavButton to="/admin/stations">Stations</NavButton> : null}
+              {user?.role === "ADMIN" ? <NavButton to="/admin/routes">Routes</NavButton> : null}
             </Stack>
 
             <Stack direction="row" spacing={1} alignItems="center">
@@ -122,6 +123,7 @@ export function AppLayout({ children }) {
               {!isAuthenticated ? <NavButton to="/register">Register</NavButton> : null}
               {isAuthenticated ? <NavButton to="/welcome">Welcome</NavButton> : null}
               {user?.role === "ADMIN" ? <NavButton to="/admin/stations">Stations</NavButton> : null}
+              {user?.role === "ADMIN" ? <NavButton to="/admin/routes">Routes</NavButton> : null}
               {isAuthenticated ? (
                 <Button
                   color="inherit"
