@@ -1,5 +1,6 @@
 package com.maksymchernenko.railwayticketsystem.model.vehicle;
 
+import com.maksymchernenko.railwayticketsystem.model.reference.SeatDirection;
 import com.maksymchernenko.railwayticketsystem.model.reference.SeatType;
 import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
@@ -39,11 +40,5 @@ public class Seat {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Direction direction;
-
-    public enum Direction {
-        FORWARD,
-        BACKWARD,
-        SIDEWAYS
-    }
+    private SeatDirection direction;
 }
