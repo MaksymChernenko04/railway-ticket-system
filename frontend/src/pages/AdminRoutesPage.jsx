@@ -8,7 +8,11 @@ import {
     CardContent,
     CircularProgress,
     Container,
+    FormControl,
+    InputLabel,
+    MenuItem,
     Paper,
+    Select,
     Stack,
     Table,
     TableBody,
@@ -32,6 +36,7 @@ const emptyForm = {
 export function AdminRoutesPage() {
     const { authorizedGet, authorizedPost, authorizedDelete, user } = useAuth();
     const [routesPage, setRoutesPage] = useState(null);
+    const [currencies, setCurrencies] = useState([]);
     const [form, setForm] = useState(emptyForm);
     const [feedback, setFeedback] = useState("");
     const [error, setError] = useState("");
@@ -54,8 +59,18 @@ export function AdminRoutesPage() {
         }
     }
 
+    async function loadCurrencies() {
+        try {
+            const data = await authorizedGet("/api/admin/routes/currencies");
+            setCurrencies(data);
+        } catch (loadError) {
+            setError(loadError.message);
+        }
+    }
+
     useEffect(() => {
         loadRoutes(0);
+        loadCurrencies();
     }, []);
 
     async function handleSubmit(event) {
@@ -79,7 +94,7 @@ export function AdminRoutesPage() {
     }
 
     async function deleteRoute(id) {
-        if (!window.confirm("Are you sure you want to delete this route?")) {
+        if (!globalThis.confirm("Are you sure you want to delete this route?")) {
             return;
         }
 
@@ -204,17 +219,21 @@ export function AdminRoutesPage() {
                                         fullWidth
                                     />
 
-                                    <TextField
-                                        label="Currency code"
-                                        value={form.currencyCode}
-                                        onChange={(event) => setForm({ ...form, currencyCode: event.target.value })}
-                                        slotProps={{
-                                            htmlInput: { minLength: 3, maxLength: 3 },
-                                        }}
-                                        placeholder="UAH"
-                                        required
-                                        fullWidth
-                                    />
+                                    <FormControl fullWidth required>
+                                        <InputLabel id="route-currency-label">Currency</InputLabel>
+                                        <Select
+                                            labelId="route-currency-label"
+                                            label="Currency"
+                                            value={form.currencyCode}
+                                            onChange={(event) => setForm({ ...form, currencyCode: event.target.value })}
+                                        >
+                                            {currencies.map((currency) => (
+                                                <MenuItem key={currency.code} value={currency.code}>
+                                                    {currency.code}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
 
                                     {error ? <Alert severity="error">{error}</Alert> : null}
 

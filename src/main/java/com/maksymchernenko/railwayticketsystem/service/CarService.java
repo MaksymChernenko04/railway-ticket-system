@@ -4,6 +4,7 @@ import com.maksymchernenko.railwayticketsystem.dto.vehicle.CarCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.vehicle.CarResponse;
 import com.maksymchernenko.railwayticketsystem.dto.vehicle.SeatCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.vehicle.SeatResponse;
+import com.maksymchernenko.railwayticketsystem.dto.vehicle.TypeResponse;
 import com.maksymchernenko.railwayticketsystem.exception.railway.EntityAlreadyExistsException;
 import com.maksymchernenko.railwayticketsystem.exception.railway.EntityNotFoundException;
 import com.maksymchernenko.railwayticketsystem.model.reference.CarType;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -35,6 +37,22 @@ public class CarService {
     public Page<CarResponse> getAllCars(Pageable pageable) {
         return carRepository.findAll(pageable)
                 .map(this::toCarResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TypeResponse> getCarTypes() {
+        return carTypeRepository.findAll().stream()
+                .sorted(Comparator.comparing(CarType::getCode))
+                .map(type -> new TypeResponse(type.getCode(), type.getPriceMultiplier()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TypeResponse> getSeatTypes() {
+        return seatTypeRepository.findAll().stream()
+                .sorted(Comparator.comparing(SeatType::getCode))
+                .map(type -> new TypeResponse(type.getCode(), type.getPriceMultiplier()))
+                .toList();
     }
 
     @Transactional

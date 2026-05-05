@@ -2,6 +2,7 @@ package com.maksymchernenko.railwayticketsystem.service;
 
 import com.maksymchernenko.railwayticketsystem.dto.railway.TrainCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.railway.TrainResponse;
+import com.maksymchernenko.railwayticketsystem.dto.vehicle.TypeResponse;
 import com.maksymchernenko.railwayticketsystem.exception.railway.EntityAlreadyExistsException;
 import com.maksymchernenko.railwayticketsystem.exception.railway.EntityNotFoundException;
 import com.maksymchernenko.railwayticketsystem.model.railway.Train;
@@ -14,6 +15,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class TrainService {
@@ -25,6 +29,14 @@ public class TrainService {
     public Page<TrainResponse> getAllTrains(Pageable pageable) {
         return trainRepository.findAll(pageable)
                 .map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TypeResponse> getTrainTypes() {
+        return trainTypeRepository.findAll().stream()
+                .sorted(Comparator.comparing(TrainType::getCode))
+                .map(type -> new TypeResponse(type.getCode(), type.getPriceMultiplier()))
+                .toList();
     }
 
     @Transactional

@@ -1,5 +1,6 @@
 package com.maksymchernenko.railwayticketsystem.service;
 
+import com.maksymchernenko.railwayticketsystem.dto.reference.CodeResponse;
 import com.maksymchernenko.railwayticketsystem.dto.railway.RouteCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.railway.RouteResponse;
 import com.maksymchernenko.railwayticketsystem.exception.railway.EntityAlreadyExistsException;
@@ -14,6 +15,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 
 @Service
@@ -27,6 +30,14 @@ public class RouteService {
     public Page<RouteResponse> getAllRoutes(Pageable pageable) {
         return routeRepository.findAll(pageable)
                 .map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CodeResponse> getCurrencies() {
+        return currencyRepository.findAll().stream()
+                .sorted(Comparator.comparing(Currency::getCode))
+                .map(currency -> new CodeResponse(currency.getCode()))
+                .toList();
     }
 
     @Transactional

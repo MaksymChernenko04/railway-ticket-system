@@ -1,5 +1,6 @@
 package com.maksymchernenko.railwayticketsystem.controller.admin;
 
+import com.maksymchernenko.railwayticketsystem.dto.reference.CodeResponse;
 import com.maksymchernenko.railwayticketsystem.dto.railway.StationCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.railway.StationResponse;
 import com.maksymchernenko.railwayticketsystem.service.StationService;
@@ -9,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/stations")
@@ -20,6 +23,16 @@ public class StationAdminController {
     @GetMapping
     public Page<StationResponse> getStations(Pageable pageable) {
         return stationService.getAllStations(pageable);
+    }
+
+    @GetMapping("/countries")
+    public List<CodeResponse> getCountries() {
+        return stationService.getCountries();
+    }
+
+    @GetMapping("/timezones")
+    public List<CodeResponse> getTimezones() {
+        return stationService.getTimezones();
     }
 
     @PostMapping

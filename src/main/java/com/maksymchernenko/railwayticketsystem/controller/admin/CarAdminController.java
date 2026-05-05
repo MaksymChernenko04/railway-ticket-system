@@ -4,6 +4,7 @@ import com.maksymchernenko.railwayticketsystem.dto.vehicle.CarCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.vehicle.CarResponse;
 import com.maksymchernenko.railwayticketsystem.dto.vehicle.SeatCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.vehicle.SeatResponse;
+import com.maksymchernenko.railwayticketsystem.dto.vehicle.TypeResponse;
 import com.maksymchernenko.railwayticketsystem.service.CarService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,16 @@ public class CarAdminController {
     @GetMapping
     public Page<CarResponse> getCars(Pageable pageable) {
         return carService.getAllCars(pageable);
+    }
+
+    @GetMapping("/types")
+    public List<TypeResponse> getCarTypes() {
+        return carService.getCarTypes();
+    }
+
+    @GetMapping("/seat-types")
+    public List<TypeResponse> getSeatTypes() {
+        return carService.getSeatTypes();
     }
 
     @PostMapping

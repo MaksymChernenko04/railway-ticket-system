@@ -1,5 +1,6 @@
 package com.maksymchernenko.railwayticketsystem.controller.admin;
 
+import com.maksymchernenko.railwayticketsystem.dto.reference.CodeResponse;
 import com.maksymchernenko.railwayticketsystem.dto.railway.RouteCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.railway.RouteResponse;
 import com.maksymchernenko.railwayticketsystem.service.RouteService;
@@ -9,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/routes")
@@ -20,6 +23,11 @@ public class RouteAdminController {
     @GetMapping
     public Page<RouteResponse> getRoutes(Pageable pageable) {
         return routeService.getAllRoutes(pageable);
+    }
+
+    @GetMapping("/currencies")
+    public List<CodeResponse> getCurrencies() {
+        return routeService.getCurrencies();
     }
 
     @PostMapping

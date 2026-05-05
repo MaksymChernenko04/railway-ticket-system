@@ -8,7 +8,11 @@ import {
     CardContent,
     CircularProgress,
     Container,
+    FormControl,
+    InputLabel,
+    MenuItem,
     Paper,
+    Select,
     Stack,
     Table,
     TableBody,
@@ -31,6 +35,7 @@ const emptyForm = {
 export function AdminTrainsPage() {
     const { authorizedGet, authorizedPost, authorizedDelete, user } = useAuth();
     const [trainsPage, setTrainsPage] = useState(null);
+    const [trainTypes, setTrainTypes] = useState([]);
     const [form, setForm] = useState(emptyForm);
     const [feedback, setFeedback] = useState("");
     const [error, setError] = useState("");
@@ -53,8 +58,18 @@ export function AdminTrainsPage() {
         }
     }
 
+    async function loadTrainTypes() {
+        try {
+            const data = await authorizedGet("/api/admin/trains/types");
+            setTrainTypes(data);
+        } catch (loadError) {
+            setError(loadError.message);
+        }
+    }
+
     useEffect(() => {
         loadTrains(0);
+        loadTrainTypes();
     }, []);
 
     async function handleSubmit(event) {
@@ -78,7 +93,7 @@ export function AdminTrainsPage() {
     }
 
     async function deleteTrain(id) {
-        if (!window.confirm("Are you sure you want to delete this train?")) {
+        if (!globalThis.confirm("Are you sure you want to delete this train?")) {
             return;
         }
 
@@ -167,16 +182,21 @@ export function AdminTrainsPage() {
                                         </Typography>
                                     </Box>
 
-                                    <TextField
-                                        label="Type code"
-                                        value={form.typeCode}
-                                        onChange={(event) => setForm({ ...form, typeCode: event.target.value })}
-                                        slotProps={{
-                                            htmlInput: { maxLength: 30 },
-                                        }}
-                                        required
-                                        fullWidth
-                                    />
+                                    <FormControl fullWidth required>
+                                        <InputLabel id="train-type-label">Type</InputLabel>
+                                        <Select
+                                            labelId="train-type-label"
+                                            label="Type"
+                                            value={form.typeCode}
+                                            onChange={(event) => setForm({ ...form, typeCode: event.target.value })}
+                                        >
+                                            {trainTypes.map((type) => (
+                                                <MenuItem key={type.code} value={type.code}>
+                                                    {type.code} x{type.priceMultiplier}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
 
                                     <TextField
                                         label="Number"

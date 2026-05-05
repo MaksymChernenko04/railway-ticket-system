@@ -9,8 +9,12 @@ import {
   Chip,
   CircularProgress,
   Container,
+  FormControl,
   FormControlLabel,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   Switch,
   Table,
@@ -36,6 +40,8 @@ const emptyForm = {
 export function AdminStationsPage() {
   const { authorizedGet, authorizedPost, authorizedDelete, user } = useAuth();
   const [stationsPage, setStationsPage] = useState(null);
+  const [countries, setCountries] = useState([]);
+  const [timezones, setTimezones] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [feedback, setFeedback] = useState("");
   const [error, setError] = useState("");
@@ -58,8 +64,22 @@ export function AdminStationsPage() {
     }
   }
 
+  async function loadReferenceData() {
+    try {
+      const [loadedCountries, loadedTimezones] = await Promise.all([
+        authorizedGet("/api/admin/stations/countries"),
+        authorizedGet("/api/admin/stations/timezones"),
+      ]);
+      setCountries(loadedCountries);
+      setTimezones(loadedTimezones);
+    } catch (loadError) {
+      setError(loadError.message);
+    }
+  }
+
   useEffect(() => {
     loadStations(0);
+    loadReferenceData();
   }, []);
 
   async function handleSubmit(event) {
@@ -83,7 +103,7 @@ export function AdminStationsPage() {
   }
 
   async function deleteStation(id) {
-    if (!window.confirm("Are you sure you want to delete this station?")) {
+    if (!globalThis.confirm("Are you sure you want to delete this station?")) {
       return;
     }
 
@@ -180,25 +200,37 @@ export function AdminStationsPage() {
                     fullWidth
                   />
 
-                  <TextField
-                    label="Country code"
-                    value={form.countryCode}
-                    onChange={(event) => setForm({ ...form, countryCode: event.target.value })}
-                    slotProps={{
-                      htmlInput: { maxLength: 8 },
-                    }}
-                    placeholder="UA"
-                    required
-                    fullWidth
-                  />
+                  <FormControl fullWidth required>
+                    <InputLabel id="station-country-label">Country</InputLabel>
+                    <Select
+                      labelId="station-country-label"
+                      label="Country"
+                      value={form.countryCode}
+                      onChange={(event) => setForm({ ...form, countryCode: event.target.value })}
+                    >
+                      {countries.map((country) => (
+                        <MenuItem key={country.code} value={country.code}>
+                          {country.code}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
 
-                  <TextField
-                    label="Timezone"
-                    value={form.timezone}
-                    onChange={(event) => setForm({ ...form, timezone: event.target.value })}
-                    required
-                    fullWidth
-                  />
+                  <FormControl fullWidth required>
+                    <InputLabel id="station-timezone-label">Timezone</InputLabel>
+                    <Select
+                      labelId="station-timezone-label"
+                      label="Timezone"
+                      value={form.timezone}
+                      onChange={(event) => setForm({ ...form, timezone: event.target.value })}
+                    >
+                      {timezones.map((timezone) => (
+                        <MenuItem key={timezone.code} value={timezone.code}>
+                          {timezone.code}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
 
                   <TextField
                     label="Address"

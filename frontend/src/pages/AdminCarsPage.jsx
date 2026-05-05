@@ -378,6 +378,8 @@ export function AdminCarsPage() {
   const [carsPage, setCarsPage] = useState(null);
   const [carForm, setCarForm] = useState(emptyCarForm);
   const [seatForm, setSeatForm] = useState(emptySeatForm);
+  const [carTypes, setCarTypes] = useState([]);
+  const [seatTypes, setSeatTypes] = useState([]);
   const [selectedCar, setSelectedCar] = useState(null);
   const [seats, setSeats] = useState([]);
   const [feedback, setFeedback] = useState("");
@@ -408,6 +410,19 @@ export function AdminCarsPage() {
     }
   }
 
+  async function loadTypes() {
+    try {
+      const [loadedCarTypes, loadedSeatTypes] = await Promise.all([
+        authorizedGet("/api/admin/cars/types"),
+        authorizedGet("/api/admin/cars/seat-types"),
+      ]);
+      setCarTypes(loadedCarTypes);
+      setSeatTypes(loadedSeatTypes);
+    } catch (loadError) {
+      setError(loadError.message);
+    }
+  }
+
   async function loadSeats(car) {
     setSelectedCar(car);
     setSeats([]);
@@ -426,6 +441,7 @@ export function AdminCarsPage() {
 
   useEffect(() => {
     loadCars(0);
+    loadTypes();
   }, []);
 
   async function handleCarSubmit(event) {
@@ -576,14 +592,21 @@ export function AdminCarsPage() {
                     </Typography>
                   </Box>
 
-                  <TextField
-                    label="Type code"
-                    value={carForm.typeCode}
-                    onChange={(event) => setCarForm({ ...carForm, typeCode: event.target.value })}
-                    slotProps={{ htmlInput: { maxLength: 30 } }}
-                    required
-                    fullWidth
-                  />
+                  <FormControl fullWidth required>
+                    <InputLabel id="car-type-label">Type</InputLabel>
+                    <Select
+                      labelId="car-type-label"
+                      label="Type"
+                      value={carForm.typeCode}
+                      onChange={(event) => setCarForm({ ...carForm, typeCode: event.target.value })}
+                    >
+                      {carTypes.map((type) => (
+                        <MenuItem key={type.code} value={type.code}>
+                          {type.code} x{type.priceMultiplier}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
 
                   <TextField
                     label="Number"
@@ -738,13 +761,21 @@ export function AdminCarsPage() {
                   direction={{ xs: "column", lg: "row" }}
                   alignItems={{ xs: "stretch", lg: "flex-end" }}
                 >
-                  <TextField
-                    label="Seat type code"
-                    value={seatForm.typeCode}
-                    onChange={(event) => setSeatForm({ ...seatForm, typeCode: event.target.value })}
-                    slotProps={{ htmlInput: { maxLength: 30 } }}
-                    required
-                  />
+                  <FormControl required sx={{ minWidth: 190 }}>
+                    <InputLabel id="seat-type-label">Seat type</InputLabel>
+                    <Select
+                      labelId="seat-type-label"
+                      label="Seat type"
+                      value={seatForm.typeCode}
+                      onChange={(event) => setSeatForm({ ...seatForm, typeCode: event.target.value })}
+                    >
+                      {seatTypes.map((type) => (
+                        <MenuItem key={type.code} value={type.code}>
+                          {type.code} x{type.priceMultiplier}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                   <TextField
                     label="Number"
                     value={seatForm.number}
