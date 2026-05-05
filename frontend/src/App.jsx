@@ -8,6 +8,7 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { WelcomePage } from "./pages/WelcomePage";
 import { AdminStationsPage } from "./pages/AdminStationsPage";
 import { AdminRoutesPage } from "./pages/AdminRoutesPage.jsx";
+import { AdminRouteStopsPage } from "./pages/AdminRouteStopsPage.jsx";
 import { AdminTrainsPage } from "./pages/AdminTrainsPage.jsx";
 import { AdminCarsPage } from "./pages/AdminCarsPage.jsx";
 
@@ -40,6 +41,7 @@ export default function App() {
       >
         <Route path="/admin/stations" element={<AdminStationsPage />} />
         <Route path="/admin/routes" element={<AdminRoutesPage />} />
+        <Route path="/admin/route-stops" element={<AdminRouteStopsPage />} />
         <Route path="/admin/trains" element={<AdminTrainsPage />} />
         <Route path="/admin/cars" element={<AdminCarsPage />} />
       </Route>

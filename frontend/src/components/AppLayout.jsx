@@ -26,6 +26,7 @@ const userNavItems = [{ to: "/welcome", label: "Welcome" }];
 const adminNavItems = [
   { to: "/admin/stations", label: "Stations" },
   { to: "/admin/routes", label: "Routes" },
+  { to: "/admin/route-stops", label: "Route stops" },
   { to: "/admin/trains", label: "Trains" },
   { to: "/admin/cars", label: "Cars" },
 ];
