@@ -46,7 +46,7 @@ public class StationService {
         station.setCountry(country);
         station.setTimezone(request.timezone().trim());
         station.setAddress(request.address() == null ? null : request.address().trim());
-        station.setIsAccessible(request.accessible());
+        station.setAccessible(request.accessible());
 
         return toResponse(stationRepository.save(station));
     }
@@ -63,7 +63,7 @@ public class StationService {
                 station.getCountry().getCode(),
                 station.getTimezone(),
                 station.getAddress(),
-                station.getIsAccessible()
+                station.getAccessible()
         );
     }
 }

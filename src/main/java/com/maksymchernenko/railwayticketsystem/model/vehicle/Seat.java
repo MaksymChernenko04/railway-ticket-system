@@ -32,10 +32,10 @@ public class Seat {
     @Column(nullable = false)
     private String number;
 
-    @Column(nullable = false)
+    @Column(name = "`row`", nullable = false)
     private Integer row;
 
-    @Column(nullable = false)
+    @Column(name = "`column`", nullable = false)
     private Integer column;
 
     @Enumerated(EnumType.STRING)

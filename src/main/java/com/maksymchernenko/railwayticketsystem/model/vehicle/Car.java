@@ -29,7 +29,7 @@ public class Car {
     @Column(nullable = false, unique = true)
     private String number;
 
-    @Column(nullable = false)
+    @Column(name = "is_accessible", nullable = false)
     private Boolean accessible;
 
     @OneToMany(mappedBy = "car", cascade = CascadeType.ALL, orphanRemoval = true)

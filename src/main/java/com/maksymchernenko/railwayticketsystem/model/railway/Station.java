@@ -33,5 +33,5 @@ public class Station {
     private String address;
 
     @Column(name = "is_accessible", nullable = false)
-    private Boolean isAccessible;
+    private Boolean accessible;
 }
