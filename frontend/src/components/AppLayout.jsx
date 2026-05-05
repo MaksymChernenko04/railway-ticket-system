@@ -15,9 +15,25 @@ import { useState } from "react";
 import { Link as RouterLink, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
-function NavButton({ to, children }) {
+const guestNavItems = [
+  { to: "/home", label: "Home" },
+  { to: "/login", label: "Login" },
+  { to: "/register", label: "Register" },
+];
+
+const userNavItems = [{ to: "/welcome", label: "Welcome" }];
+
+const adminNavItems = [
+  { to: "/admin/stations", label: "Stations" },
+  { to: "/admin/routes", label: "Routes" },
+  { to: "/admin/trains", label: "Trains" },
+  { to: "/admin/cars", label: "Cars" },
+];
+
+function renderNavButton(to, label) {
   return (
     <Button
+      key={to}
       component={NavLink}
       to={to}
       color="inherit"
@@ -37,16 +53,29 @@ function NavButton({ to, children }) {
         },
       }}
     >
-      {children}
+      {label}
     </Button>
   );
 }
 
-export function AppLayout({ children }) {
+function getNavItems(isAuthenticated, isAdmin) {
+  if (isAdmin) {
+    return [...userNavItems, ...adminNavItems];
+  }
+
+  return isAuthenticated ? userNavItems : guestNavItems;
+}
+
+function renderNavItems(isAuthenticated, isAdmin) {
+  return getNavItems(isAuthenticated, isAdmin).map((item) => renderNavButton(item.to, item.label));
+}
+
+export function AppLayout() {
   const { isAuthenticated, logout, user } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const initials = user?.firstName?.[0] || user?.email?.[0] || "U";
+  const isAdmin = user?.role === "ADMIN";
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
@@ -75,13 +104,7 @@ export function AppLayout({ children }) {
               alignItems="center"
               sx={{ display: { xs: "none", md: "flex" } }}
             >
-              {!isAuthenticated ? <NavButton to="/home">Home</NavButton> : null}
-              {!isAuthenticated ? <NavButton to="/login">Login</NavButton> : null}
-              {!isAuthenticated ? <NavButton to="/register">Register</NavButton> : null}
-              {isAuthenticated ? <NavButton to="/welcome">Welcome</NavButton> : null}
-              {user?.role === "ADMIN" ? <NavButton to="/admin/stations">Stations</NavButton> : null}
-              {user?.role === "ADMIN" ? <NavButton to="/admin/routes">Routes</NavButton> : null}
-              {user?.role === "ADMIN" ? <NavButton to="/admin/trains">Trains</NavButton> : null}
+              {renderNavItems(isAuthenticated, isAdmin)}
             </Stack>
 
             <Stack direction="row" spacing={1} alignItems="center">
@@ -110,7 +133,7 @@ export function AppLayout({ children }) {
               <IconButton
                 color="inherit"
                 sx={{ display: { xs: "inline-flex", md: "none" } }}
-                onClick={() => setIsMenuOpen((current) => !current)}
+                onClick={() => setIsMenuOpen((current) => current === false)}
               >
                 <MenuIcon />
               </IconButton>
@@ -119,13 +142,7 @@ export function AppLayout({ children }) {
 
           {isMenuOpen ? (
             <Stack spacing={1.25} sx={{ display: { xs: "flex", md: "none" }, pb: 2 }}>
-              {!isAuthenticated ? <NavButton to="/home">Home</NavButton> : null}
-              {!isAuthenticated ? <NavButton to="/login">Login</NavButton> : null}
-              {!isAuthenticated ? <NavButton to="/register">Register</NavButton> : null}
-              {isAuthenticated ? <NavButton to="/welcome">Welcome</NavButton> : null}
-              {user?.role === "ADMIN" ? <NavButton to="/admin/stations">Stations</NavButton> : null}
-              {user?.role === "ADMIN" ? <NavButton to="/admin/routes">Routes</NavButton> : null}
-              {user?.role === "ADMIN" ? <NavButton to="/admin/trains">Trains</NavButton> : null}
+              {renderNavItems(isAuthenticated, isAdmin)}
               {isAuthenticated ? (
                 <Button
                   color="inherit"
@@ -146,7 +163,7 @@ export function AppLayout({ children }) {
         </Container>
       </AppBar>
 
-      {children ?? <Outlet />}
+      <Outlet />
     </Box>
   );
 }

@@ -3,7 +3,7 @@ import { API_BASE_URL } from "../config";
 const AUTH_STORAGE_KEY = "railway-ticket-system-auth";
 
 export function loadStoredAuth() {
-  const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
+  const raw = globalThis.localStorage.getItem(AUTH_STORAGE_KEY);
   if (!raw) {
     return null;
   }
@@ -11,18 +11,18 @@ export function loadStoredAuth() {
   try {
     return JSON.parse(raw);
   } catch {
-    window.localStorage.removeItem(AUTH_STORAGE_KEY);
+    globalThis.localStorage.removeItem(AUTH_STORAGE_KEY);
     return null;
   }
 }
 
 export function saveStoredAuth(auth) {
   if (!auth) {
-    window.localStorage.removeItem(AUTH_STORAGE_KEY);
+    globalThis.localStorage.removeItem(AUTH_STORAGE_KEY);
     return;
   }
 
-  window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth));
+  globalThis.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth));
 }
 
 async function parseError(response) {
@@ -49,11 +49,14 @@ async function parseError(response) {
   throw error;
 }
 
-async function request(path, options = {}, accessToken) {
+async function request(path, accessToken, options) {
   const headers = {
     "Content-Type": "application/json",
-    ...(options.headers || {}),
   };
+
+  if (options?.headers) {
+    Object.assign(headers, options.headers);
+  }
 
   if (accessToken) {
     headers.Authorization = `Bearer ${accessToken}`;
@@ -72,37 +75,42 @@ async function request(path, options = {}, accessToken) {
     return null;
   }
 
-  return response.json();
+  const text = await response.text();
+  if (!text) {
+    return null;
+  }
+
+  return JSON.parse(text);
 }
 
 export async function postJson(path, body, accessToken) {
   return request(
     path,
+    accessToken,
     {
       method: "POST",
       body: JSON.stringify(body),
-    },
-    accessToken,
+    }
   );
 }
 
 export async function deleteJson(path, accessToken) {
   return request(
       path,
+      accessToken,
       {
         method: "DELETE",
-      },
-      accessToken,
+      }
   )
 }
 
 export async function getJson(path, accessToken) {
   return request(
     path,
+    accessToken,
     {
       method: "GET",
-    },
-    accessToken,
+    }
   );
 }
 

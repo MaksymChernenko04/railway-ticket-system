@@ -9,6 +9,7 @@ import { WelcomePage } from "./pages/WelcomePage";
 import { AdminStationsPage } from "./pages/AdminStationsPage";
 import { AdminRoutesPage } from "./pages/AdminRoutesPage.jsx";
 import { AdminTrainsPage } from "./pages/AdminTrainsPage.jsx";
+import { AdminCarsPage } from "./pages/AdminCarsPage.jsx";
 
 function HomeRedirect() {
   const { user } = useAuth();
@@ -31,35 +32,17 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
       </Route>
       <Route
-        path="/admin/stations"
         element={
           <ProtectedRoute requiredRole="ADMIN">
-            <AppLayout>
-              <AdminStationsPage />
-            </AppLayout>
+            <AppLayout />
           </ProtectedRoute>
         }
-      />
-      <Route
-          path="/admin/routes"
-          element={
-              <ProtectedRoute requiredRole="ADMIN">
-                  <AppLayout>
-                      <AdminRoutesPage />
-                  </AppLayout>
-              </ProtectedRoute>
-          }
-      />
-      <Route
-          path="/admin/trains"
-          element={
-              <ProtectedRoute requiredRole="ADMIN">
-                  <AppLayout>
-                      <AdminTrainsPage />
-                  </AppLayout>
-              </ProtectedRoute>
-          }
-      />
+      >
+        <Route path="/admin/stations" element={<AdminStationsPage />} />
+        <Route path="/admin/routes" element={<AdminRoutesPage />} />
+        <Route path="/admin/trains" element={<AdminTrainsPage />} />
+        <Route path="/admin/cars" element={<AdminCarsPage />} />
+      </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
