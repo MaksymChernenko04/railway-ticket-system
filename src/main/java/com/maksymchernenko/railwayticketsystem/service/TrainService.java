@@ -2,8 +2,8 @@ package com.maksymchernenko.railwayticketsystem.service;
 
 import com.maksymchernenko.railwayticketsystem.dto.railway.TrainCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.railway.TrainResponse;
-import com.maksymchernenko.railwayticketsystem.exception.railway.TrainAlreadyExistsException;
-import com.maksymchernenko.railwayticketsystem.exception.railway.TrainTypeNotFoundException;
+import com.maksymchernenko.railwayticketsystem.exception.railway.EntityAlreadyExistsException;
+import com.maksymchernenko.railwayticketsystem.exception.railway.EntityNotFoundException;
 import com.maksymchernenko.railwayticketsystem.model.railway.Train;
 import com.maksymchernenko.railwayticketsystem.model.reference.TrainType;
 import com.maksymchernenko.railwayticketsystem.repository.railway.TrainRepository;
@@ -33,11 +33,11 @@ public class TrainService {
         String normalizedNumber = request.number().trim();
 
         if (trainRepository.existsByNumberIgnoreCase(normalizedNumber)) {
-            throw new TrainAlreadyExistsException("Train with this number already exists");
+            throw new EntityAlreadyExistsException("Train with this number already exists");
         }
 
         TrainType trainType = trainTypeRepository.findById(normalizedTypeCode)
-                .orElseThrow(() -> new TrainTypeNotFoundException("Train type not found: " + normalizedTypeCode));
+                .orElseThrow(() -> new EntityNotFoundException("Train type not found: " + normalizedTypeCode));
 
         Train train = new Train();
         train.setType(trainType);

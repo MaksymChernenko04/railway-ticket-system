@@ -2,8 +2,8 @@ package com.maksymchernenko.railwayticketsystem.service;
 
 import com.maksymchernenko.railwayticketsystem.dto.railway.RouteCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.railway.RouteResponse;
-import com.maksymchernenko.railwayticketsystem.exception.railway.CurrencyNotFoundException;
-import com.maksymchernenko.railwayticketsystem.exception.railway.RouteAlreadyExistsException;
+import com.maksymchernenko.railwayticketsystem.exception.railway.EntityAlreadyExistsException;
+import com.maksymchernenko.railwayticketsystem.exception.railway.EntityNotFoundException;
 import com.maksymchernenko.railwayticketsystem.model.railway.Route;
 import com.maksymchernenko.railwayticketsystem.model.reference.Currency;
 import com.maksymchernenko.railwayticketsystem.repository.railway.RouteRepository;
@@ -35,11 +35,11 @@ public class RouteService {
         String normalizedNumber = request.number().trim();
 
         if (routeRepository.existsByNumberIgnoreCase(normalizedNumber)) {
-            throw new RouteAlreadyExistsException("Route with this number already exists");
+            throw new EntityAlreadyExistsException("Route with this number already exists");
         }
 
         Currency currency = currencyRepository.findById(normalizedCurrencyCode)
-                .orElseThrow(() -> new CurrencyNotFoundException("Currency not found: " + normalizedCurrencyCode));
+                .orElseThrow(() -> new EntityNotFoundException("Currency not found: " + normalizedCurrencyCode));
 
         Route route = new Route();
         route.setNumber(normalizedNumber);

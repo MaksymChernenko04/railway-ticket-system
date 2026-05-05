@@ -2,8 +2,8 @@ package com.maksymchernenko.railwayticketsystem.service;
 
 import com.maksymchernenko.railwayticketsystem.dto.railway.RouteCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.railway.RouteResponse;
-import com.maksymchernenko.railwayticketsystem.exception.railway.CurrencyNotFoundException;
-import com.maksymchernenko.railwayticketsystem.exception.railway.RouteAlreadyExistsException;
+import com.maksymchernenko.railwayticketsystem.exception.railway.EntityAlreadyExistsException;
+import com.maksymchernenko.railwayticketsystem.exception.railway.EntityNotFoundException;
 import com.maksymchernenko.railwayticketsystem.model.railway.Route;
 import com.maksymchernenko.railwayticketsystem.model.reference.Currency;
 import com.maksymchernenko.railwayticketsystem.repository.railway.RouteRepository;
@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class RouteServiceTest {
+class RouteServiceTest {
 
     @Mock
     private RouteRepository routeRepository;
@@ -41,7 +41,7 @@ public class RouteServiceTest {
     private RouteService routeService;
 
     @Test
-    public void getAllRoutesShouldMapEntitiesToResponses() {
+    void getAllRoutesShouldMapEntitiesToResponses() {
         Pageable pageable = PageRequest.of(0, 2);
 
         Currency currency = new Currency();
@@ -63,7 +63,7 @@ public class RouteServiceTest {
     }
 
     @Test
-    public void createRouteShouldTrimValuesNormalizeCurrencyCodeAndReturnResponse() {
+    void createRouteShouldTrimValuesNormalizeCurrencyCodeAndReturnResponse() {
         RouteCreateRequest request = new RouteCreateRequest(
                 "  R1  ",
                 "  Route 1  ",
@@ -104,7 +104,7 @@ public class RouteServiceTest {
     }
 
     @Test
-    public void createRouteShouldThrowWhenRouteAlreadyExists() {
+    void createRouteShouldThrowWhenRouteAlreadyExists() {
         RouteCreateRequest request = new RouteCreateRequest(
                 "R1",
                 "Route 1",
@@ -115,7 +115,7 @@ public class RouteServiceTest {
         when(routeRepository.existsByNumberIgnoreCase("R1")).thenReturn(true);
 
         assertThatThrownBy(() -> routeService.createRoute(request))
-                .isInstanceOf(RouteAlreadyExistsException.class)
+                .isInstanceOf(EntityAlreadyExistsException.class)
                 .hasMessage("Route with this number already exists");
 
         verify(currencyRepository, never()).findById(any());
@@ -123,7 +123,7 @@ public class RouteServiceTest {
     }
 
     @Test
-    public void createRouteShouldThrowWhenCurrencyDoesNotExist() {
+    void createRouteShouldThrowWhenCurrencyDoesNotExist() {
         RouteCreateRequest request = new RouteCreateRequest(
                 "R1",
                 "Route 1",
@@ -135,7 +135,7 @@ public class RouteServiceTest {
         when(currencyRepository.findById("PLN")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> routeService.createRoute(request))
-                .isInstanceOf(CurrencyNotFoundException.class)
+                .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("Currency not found: PLN");
 
         verify(routeRepository, never()).save(any());

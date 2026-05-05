@@ -2,8 +2,8 @@ package com.maksymchernenko.railwayticketsystem.service;
 
 import com.maksymchernenko.railwayticketsystem.dto.railway.StationCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.railway.StationResponse;
-import com.maksymchernenko.railwayticketsystem.exception.railway.CountryNotFoundException;
-import com.maksymchernenko.railwayticketsystem.exception.railway.StationAlreadyExistsException;
+import com.maksymchernenko.railwayticketsystem.exception.railway.EntityAlreadyExistsException;
+import com.maksymchernenko.railwayticketsystem.exception.railway.EntityNotFoundException;
 import com.maksymchernenko.railwayticketsystem.model.railway.Station;
 import com.maksymchernenko.railwayticketsystem.model.reference.Country;
 import com.maksymchernenko.railwayticketsystem.repository.railway.StationRepository;
@@ -30,7 +30,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class StationServiceTest {
+class StationServiceTest {
 
     @Mock
     private StationRepository stationRepository;
@@ -125,7 +125,7 @@ public class StationServiceTest {
         when(stationRepository.existsByCountry_CodeIgnoreCaseAndNameIgnoreCase("UA", "Kyiv")).thenReturn(true);
 
         assertThatThrownBy(() -> stationService.createStation(request))
-                .isInstanceOf(StationAlreadyExistsException.class)
+                .isInstanceOf(EntityAlreadyExistsException.class)
                 .hasMessage("Station already exists for this country");
 
         verify(countryRepository, never()).findById(any());
@@ -146,7 +146,7 @@ public class StationServiceTest {
         when(countryRepository.findById("UA")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> stationService.createStation(request))
-                .isInstanceOf(CountryNotFoundException.class)
+                .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("Country not found: UA");
 
         verify(stationRepository, never()).save(any());

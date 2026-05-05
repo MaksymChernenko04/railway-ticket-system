@@ -2,8 +2,8 @@ package com.maksymchernenko.railwayticketsystem.service;
 
 import com.maksymchernenko.railwayticketsystem.dto.railway.StationCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.railway.StationResponse;
-import com.maksymchernenko.railwayticketsystem.exception.railway.CountryNotFoundException;
-import com.maksymchernenko.railwayticketsystem.exception.railway.StationAlreadyExistsException;
+import com.maksymchernenko.railwayticketsystem.exception.railway.EntityAlreadyExistsException;
+import com.maksymchernenko.railwayticketsystem.exception.railway.EntityNotFoundException;
 import com.maksymchernenko.railwayticketsystem.model.railway.Station;
 import com.maksymchernenko.railwayticketsystem.model.reference.Country;
 import com.maksymchernenko.railwayticketsystem.repository.railway.StationRepository;
@@ -35,11 +35,11 @@ public class StationService {
         String normalizedName = request.name().trim();
 
         if (stationRepository.existsByCountry_CodeIgnoreCaseAndNameIgnoreCase(normalizedCountryCode, normalizedName)) {
-            throw new StationAlreadyExistsException("Station already exists for this country");
+            throw new EntityAlreadyExistsException("Station already exists for this country");
         }
 
         Country country = countryRepository.findById(normalizedCountryCode)
-                .orElseThrow(() -> new CountryNotFoundException("Country not found: " + normalizedCountryCode));
+                .orElseThrow(() -> new EntityNotFoundException("Country not found: " + normalizedCountryCode));
 
         Station station = new Station();
         station.setName(normalizedName);

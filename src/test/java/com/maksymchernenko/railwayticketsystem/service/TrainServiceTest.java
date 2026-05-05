@@ -2,8 +2,8 @@ package com.maksymchernenko.railwayticketsystem.service;
 
 import com.maksymchernenko.railwayticketsystem.dto.railway.TrainCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.railway.TrainResponse;
-import com.maksymchernenko.railwayticketsystem.exception.railway.TrainAlreadyExistsException;
-import com.maksymchernenko.railwayticketsystem.exception.railway.TrainTypeNotFoundException;
+import com.maksymchernenko.railwayticketsystem.exception.railway.EntityAlreadyExistsException;
+import com.maksymchernenko.railwayticketsystem.exception.railway.EntityNotFoundException;
 import com.maksymchernenko.railwayticketsystem.model.railway.Train;
 import com.maksymchernenko.railwayticketsystem.model.reference.TrainType;
 import com.maksymchernenko.railwayticketsystem.repository.railway.TrainRepository;
@@ -29,7 +29,7 @@ import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
-public class TrainServiceTest {
+class TrainServiceTest {
 
     @Mock
     private TrainRepository trainRepository;
@@ -41,7 +41,7 @@ public class TrainServiceTest {
     private TrainService trainService;
 
     @Test
-    public void getAllTrainsShouldMapEntitiesToResponses() {
+    void getAllTrainsShouldMapEntitiesToResponses() {
         Pageable pageable = PageRequest.of(0, 2);
 
         TrainType trainType = new TrainType();
@@ -62,7 +62,7 @@ public class TrainServiceTest {
     }
 
     @Test
-    public void createTrainShouldTrimValuesNormalizeTypeCodeAndReturnResponse() {
+    void createTrainShouldTrimValuesNormalizeTypeCodeAndReturnResponse() {
         TrainCreateRequest trainCreateRequest = new TrainCreateRequest(
                 "  intercity  ",
                 "  625  ",
@@ -100,7 +100,7 @@ public class TrainServiceTest {
     }
 
     @Test
-    public void createTrainShouldThrowWhenTrainAlreadyExists() {
+    void createTrainShouldThrowWhenTrainAlreadyExists() {
         TrainCreateRequest request = new TrainCreateRequest(
                 "INTERCITY",
                 "625",
@@ -110,7 +110,7 @@ public class TrainServiceTest {
         when(trainRepository.existsByNumberIgnoreCase("625")).thenReturn(true);
 
         assertThatThrownBy(() -> trainService.createTrain(request))
-                .isInstanceOf(TrainAlreadyExistsException.class)
+                .isInstanceOf(EntityAlreadyExistsException.class)
                 .hasMessage("Train with this number already exists");
 
         verify(trainTypeRepository, never()).findById(any());
@@ -118,7 +118,7 @@ public class TrainServiceTest {
     }
 
     @Test
-    public void createTrainShouldThrowWhenTypeDoesNotExist() {
+    void createTrainShouldThrowWhenTypeDoesNotExist() {
         TrainCreateRequest request = new TrainCreateRequest(
                 "INTERCITY",
                 "625",
@@ -129,7 +129,7 @@ public class TrainServiceTest {
         when(trainTypeRepository.findById("INTERCITY")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> trainService.createTrain(request))
-                .isInstanceOf(TrainTypeNotFoundException.class)
+                .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("Train type not found: INTERCITY");
 
         verify(trainRepository, never()).save(any());
