@@ -672,8 +672,8 @@ export function AdminCarsPage() {
                         <Table>
                           <TableHead>
                             <TableRow>
-                              <TableCell>Type</TableCell>
                               <TableCell>Number</TableCell>
+                              <TableCell>Type</TableCell>
                               <TableCell>Accessible</TableCell>
                               <TableCell>Action</TableCell>
                             </TableRow>
@@ -681,8 +681,8 @@ export function AdminCarsPage() {
                           <TableBody>
                             {carsPage.content.map((car) => (
                               <TableRow key={car.id} hover>
-                                <TableCell>{car.typeCode}</TableCell>
                                 <TableCell>{car.number}</TableCell>
+                                <TableCell>{car.typeCode}</TableCell>
                                 <TableCell>
                                   <Chip
                                     size="small"

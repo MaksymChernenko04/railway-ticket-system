@@ -267,8 +267,8 @@ export function AdminTrainsPage() {
                                                 <Table>
                                                     <TableHead>
                                                         <TableRow>
-                                                            <TableCell>Type</TableCell>
                                                             <TableCell>Number</TableCell>
+                                                            <TableCell>Type</TableCell>
                                                             <TableCell>Name</TableCell>
                                                             <TableCell>Action</TableCell>
                                                         </TableRow>
@@ -276,8 +276,8 @@ export function AdminTrainsPage() {
                                                     <TableBody>
                                                         {trainsPage.content.map((train) => (
                                                             <TableRow key={train.id} hover>
-                                                                <TableCell>{train.typeCode}</TableCell>
                                                                 <TableCell>{train.number}</TableCell>
+                                                                <TableCell>{train.typeCode}</TableCell>
                                                                 <TableCell>{train.name}</TableCell>
                                                                 <TableCell>
                                                                     <Button
