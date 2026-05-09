@@ -6,6 +6,7 @@ import com.maksymchernenko.railwayticketsystem.exception.auth.RoleNotConfiguredE
 import com.maksymchernenko.railwayticketsystem.exception.auth.UserAlreadyExistsException;
 import com.maksymchernenko.railwayticketsystem.exception.railway.EntityAlreadyExistsException;
 import com.maksymchernenko.railwayticketsystem.exception.railway.EntityNotFoundException;
+import com.maksymchernenko.railwayticketsystem.exception.reference.ReferenceValidationException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -45,6 +46,7 @@ public class ApiExceptionHandler {
             UserAlreadyExistsException.class,
             InvalidRefreshTokenException.class,
             EntityAlreadyExistsException.class,
+            ReferenceValidationException.class,
             BadCredentialsException.class,
             UsernameNotFoundException.class
     })
