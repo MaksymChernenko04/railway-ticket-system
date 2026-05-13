@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -77,8 +78,8 @@ class RouteStopServiceTest {
 
         when(routeRepository.findById(1L)).thenReturn(Optional.of(route));
         when(stationRepository.findById(10L)).thenReturn(Optional.of(station));
-        when(routeStopRepository.existsByRoute_IdAndOrdinal(1L, 1)).thenReturn(false);
         when(routeStopRepository.existsByRoute_IdAndStation_Id(1L, 10L)).thenReturn(false);
+        when(routeStopRepository.findByRoute_IdOrderByOrdinalDesc(1L)).thenReturn(List.of());
         when(routeStopRepository.save(any(RouteStop.class))).thenReturn(savedRouteStop);
 
         RouteStopResponse result = routeStopService.createRouteStop(request);
@@ -108,18 +109,57 @@ class RouteStopServiceTest {
     }
 
     @Test
-    void createRouteStopShouldThrowWhenOrdinalAlreadyExists() {
-        RouteStopCreateRequest request = new RouteStopCreateRequest(1L, 10L, 1);
+    void createRouteStopShouldShiftStopsWhenOrdinalAlreadyExists() {
+        Route route = createRoute();
+        Station station = createStation(13L, "Odesa");
+        RouteStop firstStop = createRouteStop(101L, route, createStation(11L, "Kyiv"), 1);
+        RouteStop secondStop = createRouteStop(102L, route, createStation(12L, "Lviv"), 2);
+        RouteStop savedRouteStop = createRouteStop(103L, route, station, 1);
+        RouteStopCreateRequest request = new RouteStopCreateRequest(1L, 13L, 1);
 
-        when(routeRepository.findById(1L)).thenReturn(Optional.of(createRoute()));
-        when(stationRepository.findById(10L)).thenReturn(Optional.of(createStation()));
-        when(routeStopRepository.existsByRoute_IdAndOrdinal(1L, 1)).thenReturn(true);
+        when(routeRepository.findById(1L)).thenReturn(Optional.of(route));
+        when(stationRepository.findById(13L)).thenReturn(Optional.of(station));
+        when(routeStopRepository.existsByRoute_IdAndStation_Id(1L, 13L)).thenReturn(false);
+        when(routeStopRepository.findByRoute_IdOrderByOrdinalDesc(1L)).thenReturn(List.of(secondStop, firstStop));
+        when(routeStopRepository.save(any(RouteStop.class))).thenReturn(savedRouteStop);
 
-        assertThatThrownBy(() -> routeStopService.createRouteStop(request))
-                .isInstanceOf(EntityAlreadyExistsException.class)
-                .hasMessage("Route stop with this ordinal already exists");
+        RouteStopResponse result = routeStopService.createRouteStop(request);
 
-        verify(routeStopRepository, never()).save(any());
+        assertThat(secondStop.getOrdinal()).isEqualTo(3);
+        assertThat(firstStop.getOrdinal()).isEqualTo(2);
+        verify(routeStopRepository, times(2)).saveAndFlush(any(RouteStop.class));
+
+        ArgumentCaptor<RouteStop> routeStopCaptor = ArgumentCaptor.forClass(RouteStop.class);
+        verify(routeStopRepository).save(routeStopCaptor.capture());
+        assertThat(routeStopCaptor.getValue().getOrdinal()).isEqualTo(1);
+        assertThat(result).isEqualTo(new RouteStopResponse(103L, 1L, "R1", 13L, "Odesa", "UA", 1));
+    }
+
+    @Test
+    void createRouteStopShouldAppendWhenRequestedOrdinalIsGreaterThanStopCount() {
+        Route route = createRoute();
+        Station station = createStation(13L, "Odesa");
+        RouteStop firstStop = createRouteStop(101L, route, createStation(11L, "Kyiv"), 1);
+        RouteStop secondStop = createRouteStop(102L, route, createStation(12L, "Lviv"), 2);
+        RouteStop savedRouteStop = createRouteStop(103L, route, station, 3);
+        RouteStopCreateRequest request = new RouteStopCreateRequest(1L, 13L, 10);
+
+        when(routeRepository.findById(1L)).thenReturn(Optional.of(route));
+        when(stationRepository.findById(13L)).thenReturn(Optional.of(station));
+        when(routeStopRepository.existsByRoute_IdAndStation_Id(1L, 13L)).thenReturn(false);
+        when(routeStopRepository.findByRoute_IdOrderByOrdinalDesc(1L)).thenReturn(List.of(secondStop, firstStop));
+        when(routeStopRepository.save(any(RouteStop.class))).thenReturn(savedRouteStop);
+
+        RouteStopResponse result = routeStopService.createRouteStop(request);
+
+        assertThat(firstStop.getOrdinal()).isEqualTo(1);
+        assertThat(secondStop.getOrdinal()).isEqualTo(2);
+        verify(routeStopRepository, never()).saveAndFlush(any(RouteStop.class));
+
+        ArgumentCaptor<RouteStop> routeStopCaptor = ArgumentCaptor.forClass(RouteStop.class);
+        verify(routeStopRepository).save(routeStopCaptor.capture());
+        assertThat(routeStopCaptor.getValue().getOrdinal()).isEqualTo(3);
+        assertThat(result).isEqualTo(new RouteStopResponse(103L, 1L, "R1", 13L, "Odesa", "UA", 3));
     }
 
     @Test
@@ -128,7 +168,6 @@ class RouteStopServiceTest {
 
         when(routeRepository.findById(1L)).thenReturn(Optional.of(createRoute()));
         when(stationRepository.findById(10L)).thenReturn(Optional.of(createStation()));
-        when(routeStopRepository.existsByRoute_IdAndOrdinal(1L, 1)).thenReturn(false);
         when(routeStopRepository.existsByRoute_IdAndStation_Id(1L, 10L)).thenReturn(true);
 
         assertThatThrownBy(() -> routeStopService.createRouteStop(request))
@@ -155,12 +194,25 @@ class RouteStopServiceTest {
     }
 
     private Station createStation() {
+        return createStation(10L, "Kyiv");
+    }
+
+    private RouteStop createRouteStop(Long id, Route route, Station station, Integer ordinal) {
+        RouteStop routeStop = new RouteStop();
+        routeStop.setId(id);
+        routeStop.setRoute(route);
+        routeStop.setStation(station);
+        routeStop.setOrdinal(ordinal);
+        return routeStop;
+    }
+
+    private Station createStation(Long id, String name) {
         Country country = new Country();
         country.setCode("UA");
 
         Station station = new Station();
-        station.setId(10L);
-        station.setName("Kyiv");
+        station.setId(id);
+        station.setName(name);
         station.setCountry(country);
         return station;
     }

@@ -16,6 +16,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class RouteStopService {
@@ -41,18 +43,18 @@ public class RouteStopService {
         Station station = stationRepository.findById(request.stationId())
                 .orElseThrow(() -> new EntityNotFoundException("Station not found: " + request.stationId()));
 
-        if (routeStopRepository.existsByRoute_IdAndOrdinal(route.getId(), request.ordinal())) {
-            throw new EntityAlreadyExistsException("Route stop with this ordinal already exists");
-        }
-
         if (routeStopRepository.existsByRoute_IdAndStation_Id(route.getId(), station.getId())) {
             throw new EntityAlreadyExistsException("Station already exists in this route");
         }
 
+        List<RouteStop> routeStops = routeStopRepository.findByRoute_IdOrderByOrdinalDesc(request.routeId());
+        int targetOrdinal = Math.min(request.ordinal(), routeStops.size() + 1);
+        shiftRouteStops(routeStops, targetOrdinal);
+
         RouteStop routeStop = new RouteStop();
         routeStop.setRoute(route);
         routeStop.setStation(station);
-        routeStop.setOrdinal(request.ordinal());
+        routeStop.setOrdinal(targetOrdinal);
 
         return toResponse(routeStopRepository.save(routeStop));
     }
@@ -60,6 +62,17 @@ public class RouteStopService {
     @Transactional
     public void deleteRouteStop(Long id) {
         routeStopRepository.deleteById(id);
+    }
+
+    private void shiftRouteStops(List<RouteStop> routeStops, int targetOrdinal) {
+        for (RouteStop routeStop : routeStops) {
+            if (routeStop.getOrdinal() < targetOrdinal) {
+                continue;
+            }
+
+            routeStop.setOrdinal(routeStop.getOrdinal() + 1);
+            routeStopRepository.saveAndFlush(routeStop);
+        }
     }
 
     private RouteStopResponse toResponse(RouteStop routeStop) {
