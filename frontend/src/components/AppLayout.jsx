@@ -29,6 +29,7 @@ const adminNavItems = [
   { to: "/admin/route-stops", label: "Route stops" },
   { to: "/admin/trains", label: "Trains" },
   { to: "/admin/cars", label: "Cars" },
+  { to: "/admin/trips", label: "Trips" },
 ];
 
 function renderNavButton(to, label) {

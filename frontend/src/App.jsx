@@ -11,6 +11,7 @@ import { AdminRoutesPage } from "./pages/AdminRoutesPage.jsx";
 import { AdminRouteStopsPage } from "./pages/AdminRouteStopsPage.jsx";
 import { AdminTrainsPage } from "./pages/AdminTrainsPage.jsx";
 import { AdminCarsPage } from "./pages/AdminCarsPage.jsx";
+import { AdminTripsPage } from "./pages/AdminTripsPage.jsx";
 
 function HomeRedirect() {
   const { user } = useAuth();
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="/admin/route-stops" element={<AdminRouteStopsPage />} />
         <Route path="/admin/trains" element={<AdminTrainsPage />} />
         <Route path="/admin/cars" element={<AdminCarsPage />} />
+        <Route path="/admin/trips" element={<AdminTripsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
