@@ -8,6 +8,7 @@ import {
   Container,
   IconButton,
   Stack,
+  Tooltip,
   Toolbar,
   Typography,
 } from "@mui/material";
@@ -21,7 +22,9 @@ const guestNavItems = [
   { to: "/register", label: "Register" },
 ];
 
-const userNavItems = [{ to: "/welcome", label: "Welcome" }];
+const userNavItems = [
+  { to: "/welcome", label: "Welcome" },
+];
 
 const adminNavItems = [
   { to: "/admin/stations", label: "Stations" },
@@ -112,9 +115,23 @@ export function AppLayout() {
             <Stack direction="row" spacing={1} alignItems="center">
               {isAuthenticated ? (
                 <>
-                  <Avatar sx={{ width: 36, height: 36, bgcolor: "secondary.main" }}>
-                    {String(initials).toUpperCase()}
-                  </Avatar>
+                  <Tooltip title="Open profile">
+                    <IconButton
+                      component={RouterLink}
+                      to="/profile"
+                      color="inherit"
+                      sx={{
+                        p: 0,
+                        "&:hover": {
+                          bgcolor: "transparent",
+                        },
+                      }}
+                    >
+                      <Avatar sx={{ width: 36, height: 36, bgcolor: "secondary.main" }}>
+                        {String(initials).toUpperCase()}
+                      </Avatar>
+                    </IconButton>
+                  </Tooltip>
                   <Button
                     color="inherit"
                     variant="text"
