@@ -148,7 +148,7 @@ export function RegisterPage() {
                   value={form.password}
                   onChange={(event) => setForm({ ...form, password: event.target.value })}
                   slotProps={{
-                    htmlInput: { maxLength: 8 },
+                    htmlInput: { maxLength: 255 },
                   }}
                   required
                   fullWidth

@@ -80,16 +80,16 @@ class AuthServiceTest {
     @Test
     void registerShouldCreateLocalClientUserAndReturnTokens() {
         RegisterRequest request = new RegisterRequest(
-                "example@test.com",
+                "  Example@Test.COM  ",
                 "password123",
                 "  John  ",
                 "  Doe  "
         );
 
         Role role = role();
-        User savedUser = user(1L, request.email(), role, "John", "Doe");
+        User savedUser = user(1L, "example@test.com", role, "John", "Doe");
 
-        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(userRepository.existsByEmail("example@test.com")).thenReturn(false);
         when(roleRepository.findById("CLIENT")).thenReturn(Optional.of(role));
         when(passwordEncoder.encode(request.password())).thenReturn("encoded-password");
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
@@ -128,13 +128,13 @@ class AuthServiceTest {
     @Test
     void registerShouldThrowWhenEmailAlreadyExists() {
         RegisterRequest request = new RegisterRequest(
-                "example@test.com",
+                "  Example@Test.COM  ",
                 "password123",
                 "John",
                 "Doe"
         );
 
-        when(userRepository.existsByEmail(request.email())).thenReturn(true);
+        when(userRepository.existsByEmail("example@test.com")).thenReturn(true);
 
         assertThatThrownBy(() -> authService.register(request))
                 .isInstanceOf(UserAlreadyExistsException.class)
@@ -147,13 +147,13 @@ class AuthServiceTest {
     @Test
     void registerShouldThrowWhenClientRoleIsMissing() {
         RegisterRequest request = new RegisterRequest(
-                "example@test.com",
+                "  Example@Test.COM  ",
                 "password123",
                 "John",
                 "Doe"
         );
 
-        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(userRepository.existsByEmail("example@test.com")).thenReturn(false);
         when(roleRepository.findById("CLIENT")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.register(request))
@@ -165,7 +165,7 @@ class AuthServiceTest {
 
     @Test
     void loginShouldAuthenticateAndIssueTokensForAuthenticatedUser() {
-        LoginRequest request = new LoginRequest("example@test.com", "password123");
+        LoginRequest request = new LoginRequest("  Example@Test.COM  ", "password123");
         User user = user(2L, "example@test.com", role(), "Jane", "Doe");
 
         Authentication authentication = new UsernamePasswordAuthenticationToken(
@@ -180,7 +180,7 @@ class AuthServiceTest {
         AuthResponse result = authService.login(request);
 
         verify(authenticationManager).authenticate(argThat(token ->
-                request.email().equals(token.getPrincipal()) && request.password().equals(token.getCredentials())
+                "example@test.com".equals(token.getPrincipal()) && request.password().equals(token.getCredentials())
         ));
         verify(refreshTokenRepository).save(any(RefreshToken.class));
         assertThat(result.accessToken()).isEqualTo("login-access-token");

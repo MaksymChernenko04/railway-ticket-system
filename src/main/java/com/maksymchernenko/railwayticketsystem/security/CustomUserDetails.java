@@ -28,7 +28,8 @@ public record CustomUserDetails(User user) implements UserDetails {
 
     @Override
     public @Nullable String getPassword() {
-        return user.getPasswordHash();
+        String passwordHash = user.getPasswordHash();
+        return passwordHash != null ? passwordHash.trim() : null;
     }
 
     @Override
