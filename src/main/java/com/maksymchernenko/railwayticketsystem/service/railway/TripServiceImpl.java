@@ -1,4 +1,4 @@
-package com.maksymchernenko.railwayticketsystem.service;
+package com.maksymchernenko.railwayticketsystem.service.railway;
 
 import com.maksymchernenko.railwayticketsystem.dto.railway.TripCarCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.railway.TripCarResponse;
@@ -39,7 +39,7 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
-public class TripService {
+public class TripServiceImpl implements TripService {
 
     private final TripRepository tripRepository;
     private final TrainRepository trainRepository;
@@ -93,6 +93,7 @@ public class TripService {
         Set<Long> routeStopIds = new HashSet<>();
         List<TripStop> stops = new ArrayList<>();
         int previousDepartureOffset = -1;
+        int previousRouteOrdinal = 0;
 
         for (TripStopCreateRequest request : requests) {
             if (!routeStopIds.add(request.routeStopId())) {
@@ -114,6 +115,10 @@ public class TripService {
                 throw new EntityAlreadyExistsException("Route stop does not belong to selected route: " + request.routeStopId());
             }
 
+            if (routeStop.getOrdinal() <= previousRouteOrdinal) {
+                throw new EntityAlreadyExistsException("Trip stops must follow the route stop order");
+            }
+
             TripStop tripStop = new TripStop();
             tripStop.setTrip(trip);
             tripStop.setRouteStop(routeStop);
@@ -123,6 +128,7 @@ public class TripService {
             tripStop.setDepartureOffsetMinutes(request.departureOffsetMinutes());
             stops.add(tripStop);
             previousDepartureOffset = request.departureOffsetMinutes();
+            previousRouteOrdinal = routeStop.getOrdinal();
         }
 
         return stops;

@@ -1,4 +1,4 @@
-package com.maksymchernenko.railwayticketsystem.service;
+package com.maksymchernenko.railwayticketsystem.service.railway;
 
 import com.maksymchernenko.railwayticketsystem.dto.railway.TrainCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.railway.TrainResponse;
@@ -20,7 +20,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class TrainService {
+public class TrainServiceImpl implements TrainService {
 
     private final TrainRepository trainRepository;
     private final TrainTypeRepository trainTypeRepository;

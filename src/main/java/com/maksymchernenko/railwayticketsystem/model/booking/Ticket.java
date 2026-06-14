@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.List;
 
 @Entity
 @Table(name = "ticket")
@@ -61,7 +63,10 @@ public class Ticket {
     @Column(name = "applied_benefit_code")
     private String appliedBenefitCode;
 
+    public static final Collection<Status> SEAT_BLOCKING_STATUSES = List.of(Status.RESERVED, Status.ACTIVE);
+
     public enum Status {
+        RESERVED,
         ACTIVE,
         FINISHED,
         CANCELLED,

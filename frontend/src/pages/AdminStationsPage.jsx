@@ -188,7 +188,7 @@ export function AdminStationsPage() {
                   <Box>
                     <Typography variant="h5">Create station</Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                      Adds a new station through the admin API.
+                      Add station details used in routes and schedules.
                     </Typography>
                   </Box>
 

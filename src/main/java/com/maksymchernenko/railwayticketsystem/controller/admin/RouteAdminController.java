@@ -3,7 +3,7 @@ package com.maksymchernenko.railwayticketsystem.controller.admin;
 import com.maksymchernenko.railwayticketsystem.dto.reference.CodeResponse;
 import com.maksymchernenko.railwayticketsystem.dto.railway.RouteCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.railway.RouteResponse;
-import com.maksymchernenko.railwayticketsystem.service.RouteService;
+import com.maksymchernenko.railwayticketsystem.service.railway.RouteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

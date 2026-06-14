@@ -11,6 +11,7 @@ import com.maksymchernenko.railwayticketsystem.model.reference.Country;
 import com.maksymchernenko.railwayticketsystem.repository.railway.RouteRepository;
 import com.maksymchernenko.railwayticketsystem.repository.railway.RouteStopRepository;
 import com.maksymchernenko.railwayticketsystem.repository.railway.StationRepository;
+import com.maksymchernenko.railwayticketsystem.service.railway.RouteStopServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -46,14 +47,14 @@ class RouteStopServiceTest {
     private StationRepository stationRepository;
 
     @InjectMocks
-    private RouteStopService routeStopService;
+    private RouteStopServiceImpl routeStopService;
 
     @Test
     void getRouteStopsShouldMapEntitiesToResponses() {
         Pageable pageable = PageRequest.of(0, 2);
         RouteStop routeStop = createRouteStop();
 
-        when(routeStopRepository.findByRoute_Id(1L, pageable))
+        when(routeStopRepository.findByRouteId(1L, pageable))
                 .thenReturn(new PageImpl<>(List.of(routeStop), pageable, 1));
 
         Page<RouteStopResponse> result = routeStopService.getRouteStops(1L, pageable);
@@ -78,8 +79,8 @@ class RouteStopServiceTest {
 
         when(routeRepository.findById(1L)).thenReturn(Optional.of(route));
         when(stationRepository.findById(10L)).thenReturn(Optional.of(station));
-        when(routeStopRepository.existsByRoute_IdAndStation_Id(1L, 10L)).thenReturn(false);
-        when(routeStopRepository.findByRoute_IdOrderByOrdinalDesc(1L)).thenReturn(List.of());
+        when(routeStopRepository.existsByRouteIdAndStationId(1L, 10L)).thenReturn(false);
+        when(routeStopRepository.findByRouteIdOrderByOrdinalDesc(1L)).thenReturn(List.of());
         when(routeStopRepository.save(any(RouteStop.class))).thenReturn(savedRouteStop);
 
         RouteStopResponse result = routeStopService.createRouteStop(request);
@@ -119,8 +120,8 @@ class RouteStopServiceTest {
 
         when(routeRepository.findById(1L)).thenReturn(Optional.of(route));
         when(stationRepository.findById(13L)).thenReturn(Optional.of(station));
-        when(routeStopRepository.existsByRoute_IdAndStation_Id(1L, 13L)).thenReturn(false);
-        when(routeStopRepository.findByRoute_IdOrderByOrdinalDesc(1L)).thenReturn(List.of(secondStop, firstStop));
+        when(routeStopRepository.existsByRouteIdAndStationId(1L, 13L)).thenReturn(false);
+        when(routeStopRepository.findByRouteIdOrderByOrdinalDesc(1L)).thenReturn(List.of(secondStop, firstStop));
         when(routeStopRepository.save(any(RouteStop.class))).thenReturn(savedRouteStop);
 
         RouteStopResponse result = routeStopService.createRouteStop(request);
@@ -146,8 +147,8 @@ class RouteStopServiceTest {
 
         when(routeRepository.findById(1L)).thenReturn(Optional.of(route));
         when(stationRepository.findById(13L)).thenReturn(Optional.of(station));
-        when(routeStopRepository.existsByRoute_IdAndStation_Id(1L, 13L)).thenReturn(false);
-        when(routeStopRepository.findByRoute_IdOrderByOrdinalDesc(1L)).thenReturn(List.of(secondStop, firstStop));
+        when(routeStopRepository.existsByRouteIdAndStationId(1L, 13L)).thenReturn(false);
+        when(routeStopRepository.findByRouteIdOrderByOrdinalDesc(1L)).thenReturn(List.of(secondStop, firstStop));
         when(routeStopRepository.save(any(RouteStop.class))).thenReturn(savedRouteStop);
 
         RouteStopResponse result = routeStopService.createRouteStop(request);
@@ -168,7 +169,7 @@ class RouteStopServiceTest {
 
         when(routeRepository.findById(1L)).thenReturn(Optional.of(createRoute()));
         when(stationRepository.findById(10L)).thenReturn(Optional.of(createStation()));
-        when(routeStopRepository.existsByRoute_IdAndStation_Id(1L, 10L)).thenReturn(true);
+        when(routeStopRepository.existsByRouteIdAndStationId(1L, 10L)).thenReturn(true);
 
         assertThatThrownBy(() -> routeStopService.createRouteStop(request))
                 .isInstanceOf(EntityAlreadyExistsException.class)

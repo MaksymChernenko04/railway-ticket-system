@@ -34,7 +34,7 @@ public class Passenger {
     private String lastName;
 
     @ManyToOne
-    @JoinColumn(name = "benefit_code", nullable = false)
+    @JoinColumn(name = "benefit_code")
     private Benefit benefit;
 
     @OneToMany(mappedBy = "passenger")

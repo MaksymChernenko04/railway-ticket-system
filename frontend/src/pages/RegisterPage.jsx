@@ -91,15 +91,14 @@ export function RegisterPage() {
                     color="secondary.main"
                     sx={{ letterSpacing: "0.16em", fontWeight: 700 }}
                   >
-                    Client registration
+                    Create account
                   </Typography>
                   <Typography variant="h2" sx={{ mt: 1, maxWidth: 640 }}>
-                    Create your account and start using the system.
+                    Create your account and start booking tickets.
                   </Typography>
                 </Box>
                 <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 560 }}>
-                  Registration gives you personal access to the service and prepares your account
-                  for future booking and profile features.
+                  Registration gives you personal access to ticket booking and profile management.
                 </Typography>
               </Stack>
             </CardContent>

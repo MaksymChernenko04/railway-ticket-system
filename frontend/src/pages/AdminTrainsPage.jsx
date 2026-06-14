@@ -178,7 +178,7 @@ export function AdminTrainsPage() {
                                     <Box>
                                         <Typography variant="h5">Create train</Typography>
                                         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                                            Adds a new train through the admin API.
+                                            Register a train number, type, and display name.
                                         </Typography>
                                     </Box>
 

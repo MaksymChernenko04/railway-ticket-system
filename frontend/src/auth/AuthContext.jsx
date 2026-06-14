@@ -57,16 +57,16 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const processError = async (error) => {
-    if (error.status !== 401 || !authState?.refreshToken) {
+  const processError = async (error, currentAuthState) => {
+    if (error.status !== 401 || !currentAuthState?.refreshToken) {
       throw error;
     }
 
-    const refreshed = await refreshAuth(authState.refreshToken);
+    const refreshed = await refreshAuth(currentAuthState.refreshToken);
 
     const nextState = {
       ...refreshed,
-      user: refreshed.user ?? authState.user,
+      user: refreshed.user ?? currentAuthState.user,
     };
 
     setAuthState(nextState);
@@ -76,7 +76,8 @@ export function AuthProvider({ children }) {
   };
 
   const authorizedRequest = async (requestFn) => {
-    let token = authState?.accessToken;
+    const currentAuthState = authState ?? loadStoredAuth();
+    let token = currentAuthState?.accessToken;
 
     if (!token) {
       throw new Error("Authentication is required");
@@ -85,7 +86,7 @@ export function AuthProvider({ children }) {
     try {
       return await requestFn(token);
     } catch (error) {
-      token = await processError(error);
+      token = await processError(error, currentAuthState);
       return requestFn(token);
     }
   };

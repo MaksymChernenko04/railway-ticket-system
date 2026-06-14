@@ -1,4 +1,4 @@
-package com.maksymchernenko.railwayticketsystem.service;
+package com.maksymchernenko.railwayticketsystem.service.vehicle;
 
 import com.maksymchernenko.railwayticketsystem.dto.vehicle.CarCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.vehicle.CarResponse;
@@ -26,7 +26,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class CarService {
+public class CarServiceImpl implements CarService {
 
     private final CarRepository carRepository;
     private final CarTypeRepository carTypeRepository;
@@ -82,7 +82,7 @@ public class CarService {
 
     @Transactional(readOnly = true)
     public List<SeatResponse> getSeatsByCarId(Long id) {
-        return seatRepository.findAllByCar_Id(id).stream()
+        return seatRepository.findAllByCarId(id).stream()
                 .map(this::toSeatResponse)
                 .toList();
     }

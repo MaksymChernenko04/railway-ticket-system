@@ -5,5 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface StationRepository extends JpaRepository<Station, Long> {
 
-    boolean existsByCountry_CodeIgnoreCaseAndNameIgnoreCase(String countryCode, String name);
+    boolean existsByCountryCodeIgnoreCaseAndNameIgnoreCase(String countryCode, String name);
 }

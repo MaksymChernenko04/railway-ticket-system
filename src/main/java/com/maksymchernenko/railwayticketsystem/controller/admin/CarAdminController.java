@@ -5,7 +5,7 @@ import com.maksymchernenko.railwayticketsystem.dto.vehicle.CarResponse;
 import com.maksymchernenko.railwayticketsystem.dto.vehicle.SeatCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.vehicle.SeatResponse;
 import com.maksymchernenko.railwayticketsystem.dto.vehicle.TypeResponse;
-import com.maksymchernenko.railwayticketsystem.service.CarService;
+import com.maksymchernenko.railwayticketsystem.service.vehicle.CarService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

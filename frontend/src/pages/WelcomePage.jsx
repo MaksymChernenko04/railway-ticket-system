@@ -57,7 +57,7 @@ export function WelcomePage() {
                                     color="secondary.main"
                                     sx={{ letterSpacing: "0.16em", fontWeight: 700 }}
                                 >
-                                    Welcome page
+                                    Welcome
                                 </Typography>
                                 <Typography variant="h1" sx={{ mt: 1, fontSize: { xs: "2.8rem", md: "4.2rem" }, maxWidth: 820 }}>
                                     Welcome back, {user?.firstName || user?.email}.
@@ -65,8 +65,7 @@ export function WelcomePage() {
                             </Box>
 
                             <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 760, fontWeight: 400 }}>
-                                Your account is ready to use. Move through the system with the navigation bar and
-                                continue to the sections available for your role.
+                                Your account is ready. Use the navigation bar to continue.
                             </Typography>
                         </Stack>
                     </CardContent>

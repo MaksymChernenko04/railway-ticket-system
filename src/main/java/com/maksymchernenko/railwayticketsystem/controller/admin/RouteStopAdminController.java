@@ -2,7 +2,7 @@ package com.maksymchernenko.railwayticketsystem.controller.admin;
 
 import com.maksymchernenko.railwayticketsystem.dto.railway.RouteStopCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.railway.RouteStopResponse;
-import com.maksymchernenko.railwayticketsystem.service.RouteStopService;
+import com.maksymchernenko.railwayticketsystem.service.railway.RouteStopService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

@@ -9,13 +9,15 @@ import java.util.List;
 
 public interface RouteStopRepository extends JpaRepository<RouteStop, Long> {
 
-    Page<RouteStop> findByRoute_Id(Long routeId, Pageable pageable);
+    Page<RouteStop> findByRouteId(Long routeId, Pageable pageable);
 
-    boolean existsByRoute_IdAndOrdinal(Long routeId, Integer ordinal);
+    boolean existsByRouteIdAndOrdinal(Long routeId, Integer ordinal);
 
-    boolean existsByRoute_IdAndStation_Id(Long routeId, Long stationId);
+    boolean existsByRouteIdAndStationId(Long routeId, Long stationId);
 
-    List<RouteStop> findByRoute_Id(Long routeId);
+    List<RouteStop> findByRouteId(Long routeId);
 
-    List<RouteStop> findByRoute_IdOrderByOrdinalDesc(Long routeId);
+    List<RouteStop> findByStationId(Long stationId);
+
+    List<RouteStop> findByRouteIdOrderByOrdinalDesc(Long routeId);
 }

@@ -8,6 +8,7 @@ import com.maksymchernenko.railwayticketsystem.model.railway.Train;
 import com.maksymchernenko.railwayticketsystem.model.reference.TrainType;
 import com.maksymchernenko.railwayticketsystem.repository.railway.TrainRepository;
 import com.maksymchernenko.railwayticketsystem.repository.reference.TrainTypeRepository;
+import com.maksymchernenko.railwayticketsystem.service.railway.TrainServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -38,7 +39,7 @@ class TrainServiceTest {
     private TrainTypeRepository trainTypeRepository;
 
     @InjectMocks
-    private TrainService trainService;
+    private TrainServiceImpl trainService;
 
     @Test
     void getAllTrainsShouldMapEntitiesToResponses() {

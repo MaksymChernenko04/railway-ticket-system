@@ -1,4 +1,4 @@
-package com.maksymchernenko.railwayticketsystem.service;
+package com.maksymchernenko.railwayticketsystem.service.railway;
 
 import com.maksymchernenko.railwayticketsystem.dto.reference.CodeResponse;
 import com.maksymchernenko.railwayticketsystem.dto.railway.StationCreateRequest;
@@ -22,7 +22,7 @@ import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
-public class StationService {
+public class StationServiceImpl implements StationService {
 
     private final StationRepository stationRepository;
     private final CountryRepository countryRepository;
@@ -53,7 +53,7 @@ public class StationService {
         String normalizedCountryCode = request.countryCode().trim().toUpperCase(Locale.ROOT);
         String normalizedName = request.name().trim();
 
-        if (stationRepository.existsByCountry_CodeIgnoreCaseAndNameIgnoreCase(normalizedCountryCode, normalizedName)) {
+        if (stationRepository.existsByCountryCodeIgnoreCaseAndNameIgnoreCase(normalizedCountryCode, normalizedName)) {
             throw new EntityAlreadyExistsException("Station already exists for this country");
         }
 

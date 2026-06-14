@@ -1,4 +1,4 @@
-package com.maksymchernenko.railwayticketsystem.service;
+package com.maksymchernenko.railwayticketsystem.service.auth;
 
 import com.maksymchernenko.railwayticketsystem.dto.auth.*;
 import com.maksymchernenko.railwayticketsystem.exception.auth.InvalidRefreshTokenException;
@@ -32,7 +32,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class AuthService {
+public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;

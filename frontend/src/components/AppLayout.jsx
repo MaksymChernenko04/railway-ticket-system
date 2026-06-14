@@ -24,6 +24,9 @@ const guestNavItems = [
 
 const userNavItems = [
   { to: "/welcome", label: "Welcome" },
+  { to: "/trips/search", label: "Search trips" },
+  { to: "/tickets", label: "My tickets" },
+  { to: "/orders", label: "My orders" },
 ];
 
 const adminNavItems = [
@@ -33,6 +36,7 @@ const adminNavItems = [
   { to: "/admin/trains", label: "Trains" },
   { to: "/admin/cars", label: "Cars" },
   { to: "/admin/trips", label: "Trips" },
+  { to: "/admin/analytics", label: "Analytics" },
 ];
 
 function renderNavButton(to, label) {
@@ -152,7 +156,7 @@ export function AppLayout() {
               <IconButton
                 color="inherit"
                 sx={{ display: { xs: "inline-flex", md: "none" } }}
-                onClick={() => setIsMenuOpen((current) => current === false)}
+                onClick={() => setIsMenuOpen((current) => !current)}
               >
                 <MenuIcon />
               </IconButton>

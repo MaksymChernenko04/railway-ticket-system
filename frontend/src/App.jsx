@@ -13,6 +13,12 @@ import { AdminRouteStopsPage } from "./pages/AdminRouteStopsPage.jsx";
 import { AdminTrainsPage } from "./pages/AdminTrainsPage.jsx";
 import { AdminCarsPage } from "./pages/AdminCarsPage.jsx";
 import { AdminTripsPage } from "./pages/AdminTripsPage.jsx";
+import { AdminAnalyticsPage } from "./pages/AdminAnalyticsPage.jsx";
+import { SearchTripsPage } from "./pages/SearchTripsPage.jsx";
+import { SelectSeatsPage } from "./pages/SelectSeatsPage.jsx";
+import { PaymentPage } from "./pages/PaymentPage.jsx";
+import { MyTicketsPage } from "./pages/MyTicketsPage.jsx";
+import { MyOrdersPage } from "./pages/MyOrdersPage.jsx";
 
 function HomeRedirect() {
   const { user } = useAuth();
@@ -42,6 +48,11 @@ export default function App() {
         }
       >
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/trips/search" element={<SearchTripsPage />} />
+        <Route path="/trips/:tripId/seats" element={<SelectSeatsPage />} />
+        <Route path="/payments/:paymentId" element={<PaymentPage />} />
+        <Route path="/tickets" element={<MyTicketsPage />} />
+        <Route path="/orders" element={<MyOrdersPage />} />
       </Route>
       <Route
         element={
@@ -56,6 +67,7 @@ export default function App() {
         <Route path="/admin/trains" element={<AdminTrainsPage />} />
         <Route path="/admin/cars" element={<AdminCarsPage />} />
         <Route path="/admin/trips" element={<AdminTripsPage />} />
+        <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

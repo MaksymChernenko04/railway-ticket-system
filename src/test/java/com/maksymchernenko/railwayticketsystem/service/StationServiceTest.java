@@ -8,6 +8,7 @@ import com.maksymchernenko.railwayticketsystem.model.railway.Station;
 import com.maksymchernenko.railwayticketsystem.model.reference.Country;
 import com.maksymchernenko.railwayticketsystem.repository.railway.StationRepository;
 import com.maksymchernenko.railwayticketsystem.repository.reference.CountryRepository;
+import com.maksymchernenko.railwayticketsystem.service.railway.StationServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -39,7 +40,7 @@ class StationServiceTest {
     private CountryRepository countryRepository;
 
     @InjectMocks
-    private StationService stationService;
+    private StationServiceImpl stationService;
 
     @Test
     void getAllStationsShouldMapEntitiesToResponses() {
@@ -86,7 +87,7 @@ class StationServiceTest {
         savedStation.setAddress("Vokzalna Sq.");
         savedStation.setAccessible(true);
 
-        when(stationRepository.existsByCountry_CodeIgnoreCaseAndNameIgnoreCase("UA", "Kyiv-Pasazhyrskyi"))
+        when(stationRepository.existsByCountryCodeIgnoreCaseAndNameIgnoreCase("UA", "Kyiv-Pasazhyrskyi"))
                 .thenReturn(false);
         when(countryRepository.findById("UA")).thenReturn(Optional.of(country));
         when(stationRepository.save(any(Station.class))).thenReturn(savedStation);
@@ -122,7 +123,7 @@ class StationServiceTest {
                 true
         );
 
-        when(stationRepository.existsByCountry_CodeIgnoreCaseAndNameIgnoreCase("UA", "Kyiv")).thenReturn(true);
+        when(stationRepository.existsByCountryCodeIgnoreCaseAndNameIgnoreCase("UA", "Kyiv")).thenReturn(true);
 
         assertThatThrownBy(() -> stationService.createStation(request))
                 .isInstanceOf(EntityAlreadyExistsException.class)
@@ -142,7 +143,7 @@ class StationServiceTest {
                 false
         );
 
-        when(stationRepository.existsByCountry_CodeIgnoreCaseAndNameIgnoreCase("UA", "Lviv")).thenReturn(false);
+        when(stationRepository.existsByCountryCodeIgnoreCaseAndNameIgnoreCase("UA", "Lviv")).thenReturn(false);
         when(countryRepository.findById("UA")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> stationService.createStation(request))

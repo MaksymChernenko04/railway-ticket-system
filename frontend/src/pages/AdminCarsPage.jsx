@@ -588,7 +588,7 @@ export function AdminCarsPage() {
                   <Box>
                     <Typography variant="h5">Create car</Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                      Adds a new car through the admin API.
+                      Define a car type, number, and accessibility settings.
                     </Typography>
                   </Box>
 

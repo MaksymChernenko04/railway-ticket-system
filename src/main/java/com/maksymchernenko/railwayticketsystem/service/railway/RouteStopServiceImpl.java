@@ -1,4 +1,4 @@
-package com.maksymchernenko.railwayticketsystem.service;
+package com.maksymchernenko.railwayticketsystem.service.railway;
 
 import com.maksymchernenko.railwayticketsystem.dto.railway.RouteStopCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.railway.RouteStopResponse;
@@ -20,7 +20,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class RouteStopService {
+public class RouteStopServiceImpl implements RouteStopService {
 
     private final RouteStopRepository routeStopRepository;
     private final RouteRepository routeRepository;
@@ -30,7 +30,7 @@ public class RouteStopService {
     public Page<RouteStopResponse> getRouteStops(Long routeId, Pageable pageable) {
         Page<RouteStop> routeStops = routeId == null
                 ? routeStopRepository.findAll(pageable)
-                : routeStopRepository.findByRoute_Id(routeId, pageable);
+                : routeStopRepository.findByRouteId(routeId, pageable);
 
         return routeStops.map(this::toResponse);
     }
@@ -43,11 +43,11 @@ public class RouteStopService {
         Station station = stationRepository.findById(request.stationId())
                 .orElseThrow(() -> new EntityNotFoundException("Station not found: " + request.stationId()));
 
-        if (routeStopRepository.existsByRoute_IdAndStation_Id(route.getId(), station.getId())) {
+        if (routeStopRepository.existsByRouteIdAndStationId(route.getId(), station.getId())) {
             throw new EntityAlreadyExistsException("Station already exists in this route");
         }
 
-        List<RouteStop> routeStops = routeStopRepository.findByRoute_IdOrderByOrdinalDesc(request.routeId());
+        List<RouteStop> routeStops = routeStopRepository.findByRouteIdOrderByOrdinalDesc(request.routeId());
         int targetOrdinal = Math.min(request.ordinal(), routeStops.size() + 1);
         shiftRouteStops(routeStops, targetOrdinal);
 

@@ -27,6 +27,7 @@ import com.maksymchernenko.railwayticketsystem.repository.railway.TrainRepositor
 import com.maksymchernenko.railwayticketsystem.repository.railway.TripRepository;
 import com.maksymchernenko.railwayticketsystem.repository.vehicle.CarRepository;
 import com.maksymchernenko.railwayticketsystem.repository.vehicle.SeatRepository;
+import com.maksymchernenko.railwayticketsystem.service.railway.TripServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -73,7 +74,7 @@ class TripServiceTest {
     private SeatRepository seatRepository;
 
     @InjectMocks
-    private TripService tripService;
+    private TripServiceImpl tripService;
 
     @Test
     void getTripsShouldMapEntitiesToSummaryResponses() {
@@ -183,6 +184,24 @@ class TripServiceTest {
         assertThatThrownBy(() -> tripService.createTrip(createRequest()))
                 .isInstanceOf(EntityAlreadyExistsException.class)
                 .hasMessage("Route stop does not belong to selected route: 100");
+
+        verify(tripRepository, never()).save(any());
+    }
+
+    @Test
+    void createTripShouldThrowWhenTripStopsDoNotFollowRouteOrder() {
+        Route route = createRoute();
+        RouteStop kyivStop = createRouteStop(100L, route, createStation(10L, "Kyiv"), 2);
+        RouteStop lvivStop = createRouteStop(101L, route, createStation(11L, "Lviv"), 1);
+
+        when(trainRepository.findById(1L)).thenReturn(Optional.of(createTrain()));
+        when(routeRepository.findById(2L)).thenReturn(Optional.of(route));
+        when(routeStopRepository.findById(100L)).thenReturn(Optional.of(kyivStop));
+        when(routeStopRepository.findById(101L)).thenReturn(Optional.of(lvivStop));
+
+        assertThatThrownBy(() -> tripService.createTrip(createRequest()))
+                .isInstanceOf(EntityAlreadyExistsException.class)
+                .hasMessage("Trip stops must follow the route stop order");
 
         verify(tripRepository, never()).save(any());
     }

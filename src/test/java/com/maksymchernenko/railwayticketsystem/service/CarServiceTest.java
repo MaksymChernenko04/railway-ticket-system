@@ -13,6 +13,7 @@ import com.maksymchernenko.railwayticketsystem.repository.reference.CarTypeRepos
 import com.maksymchernenko.railwayticketsystem.repository.reference.SeatTypeRepository;
 import com.maksymchernenko.railwayticketsystem.repository.vehicle.CarRepository;
 import com.maksymchernenko.railwayticketsystem.repository.vehicle.SeatRepository;
+import com.maksymchernenko.railwayticketsystem.service.vehicle.CarServiceImpl;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -53,7 +54,7 @@ class CarServiceTest {
     private SeatTypeRepository seatTypeRepository;
 
     @InjectMocks
-    private CarService carService;
+    private CarServiceImpl carService;
 
     @Test
     void getAllCarsShouldMapEntitiesToResponses() {
@@ -154,7 +155,7 @@ class CarServiceTest {
         seat.setColumn(1);
         seat.setDirection(SeatDirection.FORWARD);
 
-        when(seatRepository.findAllByCar_Id(1L)).thenReturn(List.of(seat));
+        when(seatRepository.findAllByCarId(1L)).thenReturn(List.of(seat));
 
         List<SeatResponse> result = carService.getSeatsByCarId(1L);
 

@@ -4,6 +4,7 @@ import com.maksymchernenko.railwayticketsystem.dto.common.ErrorResponse;
 import com.maksymchernenko.railwayticketsystem.exception.auth.InvalidRefreshTokenException;
 import com.maksymchernenko.railwayticketsystem.exception.auth.RoleNotConfiguredException;
 import com.maksymchernenko.railwayticketsystem.exception.auth.UserAlreadyExistsException;
+import com.maksymchernenko.railwayticketsystem.exception.client.TripClientValidationException;
 import com.maksymchernenko.railwayticketsystem.exception.railway.EntityAlreadyExistsException;
 import com.maksymchernenko.railwayticketsystem.exception.railway.EntityNotFoundException;
 import com.maksymchernenko.railwayticketsystem.exception.reference.ReferenceValidationException;
@@ -45,6 +46,7 @@ public class ApiExceptionHandler {
     @ExceptionHandler({
             UserAlreadyExistsException.class,
             InvalidRefreshTokenException.class,
+            TripClientValidationException.class,
             EntityAlreadyExistsException.class,
             ReferenceValidationException.class,
             BadCredentialsException.class,

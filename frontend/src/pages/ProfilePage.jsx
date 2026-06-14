@@ -10,11 +10,14 @@ import {
   Chip,
   Container,
   Divider,
+  CircularProgress,
   Stack,
   Typography,
 } from "@mui/material";
+import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { PassengerManager } from "../components/PassengerManager";
 
 function ProfileField({ icon, label, value }) {
   return (
@@ -54,7 +57,52 @@ function ProfileField({ icon, label, value }) {
 }
 
 export function ProfilePage() {
-  const { isAuthenticated, user } = useAuth();
+  const { authorizedGet, authorizedPost, authorizedDelete, isAuthenticated, user } = useAuth();
+  const [passengers, setPassengers] = useState([]);
+  const [benefits, setBenefits] = useState([]);
+  const [passengerError, setPassengerError] = useState("");
+  const [isLoadingPassengers, setIsLoadingPassengers] = useState(true);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadPassengers() {
+      if (!isAuthenticated) {
+        return;
+      }
+
+      setIsLoadingPassengers(true);
+      setPassengerError("");
+
+      try {
+        const [loadedPassengers, loadedBenefits] = await Promise.all([
+          authorizedGet("/api/client/passengers"),
+          authorizedGet("/api/client/passengers/benefits"),
+        ]);
+
+        if (!isActive) {
+          return;
+        }
+
+        setPassengers(loadedPassengers);
+        setBenefits(loadedBenefits);
+      } catch (loadError) {
+        if (isActive) {
+          setPassengerError(loadError.message);
+        }
+      } finally {
+        if (isActive) {
+          setIsLoadingPassengers(false);
+        }
+      }
+    }
+
+    loadPassengers();
+
+    return () => {
+      isActive = false;
+    };
+  }, [isAuthenticated]);
 
   if (!isAuthenticated) {
     return <Navigate to="/home" replace />;
@@ -62,6 +110,27 @@ export function ProfilePage() {
 
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ");
   const initials = user?.firstName?.[0] || user?.email?.[0] || "U";
+
+  async function createPassenger(payload) {
+    setPassengerError("");
+    try {
+      const createdPassenger = await authorizedPost("/api/client/passengers", payload);
+      setPassengers((current) => [...current, createdPassenger]);
+    } catch (createError) {
+      setPassengerError(createError.message);
+      throw createError;
+    }
+  }
+
+  async function deletePassenger(passengerId) {
+    setPassengerError("");
+    try {
+      await authorizedDelete(`/api/client/passengers/${passengerId}`);
+      setPassengers((current) => current.filter((passenger) => passenger.id !== passengerId));
+    } catch (deleteError) {
+      setPassengerError(deleteError.message);
+    }
+  }
 
   return (
     <Box
@@ -136,6 +205,27 @@ export function ProfilePage() {
                   <ProfileField icon={<BadgeIcon />} label="User ID" value={user?.id} />
                 </Box>
               </Stack>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+              {isLoadingPassengers ? (
+                <Stack spacing={2} alignItems="center" sx={{ py: 4 }}>
+                  <CircularProgress />
+                  <Typography color="text.secondary">Loading passengers...</Typography>
+                </Stack>
+              ) : (
+                <PassengerManager
+                  passengers={passengers}
+                  benefits={benefits}
+                  isLoading={isLoadingPassengers}
+                  error={passengerError}
+                  onCreate={createPassenger}
+                  onDelete={deletePassenger}
+                  description="Manage passenger profiles used during checkout."
+                />
+              )}
             </CardContent>
           </Card>
         </Stack>

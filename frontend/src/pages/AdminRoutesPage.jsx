@@ -179,7 +179,7 @@ export function AdminRoutesPage() {
                                     <Box>
                                         <Typography variant="h5">Create route</Typography>
                                         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                                            Adds a new route through the admin API.
+                                            Set the public route number, name, base price, and currency.
                                         </Typography>
                                     </Box>
 

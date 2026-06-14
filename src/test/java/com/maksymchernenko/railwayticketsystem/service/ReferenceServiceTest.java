@@ -16,6 +16,7 @@ import com.maksymchernenko.railwayticketsystem.repository.reference.CountryRepos
 import com.maksymchernenko.railwayticketsystem.repository.reference.CurrencyRepository;
 import com.maksymchernenko.railwayticketsystem.repository.reference.SeatTypeRepository;
 import com.maksymchernenko.railwayticketsystem.repository.reference.TrainTypeRepository;
+import com.maksymchernenko.railwayticketsystem.service.reference.ReferenceServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -59,7 +60,7 @@ class ReferenceServiceTest {
     private BenefitRepository benefitRepository;
 
     @InjectMocks
-    private ReferenceService referenceService;
+    private ReferenceServiceImpl referenceService;
 
     @Test
     void getReferencesShouldMapTrainTypesToResponses() {

@@ -64,9 +64,8 @@ export function HomePage() {
               </Box>
 
               <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 760, fontWeight: 400 }}>
-                Railway Ticket System helps passengers access their account, plan future journeys,
-                and use railway services in one place. Sign in if you already have an account or
-                register to get started.
+                Plan future journeys, manage your account, and use railway services in one place.
+                Sign in if you already have an account or register to get started.
               </Typography>
 
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>

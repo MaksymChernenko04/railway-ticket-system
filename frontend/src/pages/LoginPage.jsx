@@ -87,15 +87,14 @@ export function LoginPage() {
                     color="primary.main"
                     sx={{ letterSpacing: "0.16em", fontWeight: 700 }}
                   >
-                    Client login
+                    Sign in
                   </Typography>
                   <Typography variant="h2" sx={{ mt: 1, maxWidth: 500 }}>
                     Sign in to continue your railway journey.
                   </Typography>
                 </Box>
                 <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 500 }}>
-                  Use your email and password to open your account, view available features, and
-                  continue working in the system.
+                  Use your email and password to open your account and manage your trips.
                 </Typography>
               </Stack>
             </CardContent>

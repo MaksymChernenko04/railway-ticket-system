@@ -8,6 +8,7 @@ import com.maksymchernenko.railwayticketsystem.model.railway.Route;
 import com.maksymchernenko.railwayticketsystem.model.reference.Currency;
 import com.maksymchernenko.railwayticketsystem.repository.railway.RouteRepository;
 import com.maksymchernenko.railwayticketsystem.repository.reference.CurrencyRepository;
+import com.maksymchernenko.railwayticketsystem.service.railway.RouteServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -38,7 +39,7 @@ class RouteServiceTest {
     private CurrencyRepository currencyRepository;
 
     @InjectMocks
-    private RouteService routeService;
+    private RouteServiceImpl routeService;
 
     @Test
     void getAllRoutesShouldMapEntitiesToResponses() {

@@ -17,6 +17,7 @@ import com.maksymchernenko.railwayticketsystem.repository.auth.RoleRepository;
 import com.maksymchernenko.railwayticketsystem.repository.auth.UserRepository;
 import com.maksymchernenko.railwayticketsystem.security.CustomUserDetails;
 import com.maksymchernenko.railwayticketsystem.security.JwtService;
+import com.maksymchernenko.railwayticketsystem.service.auth.AuthServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -70,7 +71,7 @@ class AuthServiceTest {
     private JwtService jwtService;
 
     @InjectMocks
-    private AuthService authService;
+    private AuthServiceImpl authService;
 
     @BeforeEach
     void setUp() {

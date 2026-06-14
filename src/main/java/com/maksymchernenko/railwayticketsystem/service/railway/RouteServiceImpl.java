@@ -1,4 +1,4 @@
-package com.maksymchernenko.railwayticketsystem.service;
+package com.maksymchernenko.railwayticketsystem.service.railway;
 
 import com.maksymchernenko.railwayticketsystem.dto.reference.CodeResponse;
 import com.maksymchernenko.railwayticketsystem.dto.railway.RouteCreateRequest;
@@ -21,7 +21,7 @@ import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
-public class RouteService {
+public class RouteServiceImpl implements RouteService {
 
     private final RouteRepository routeRepository;
     private final CurrencyRepository currencyRepository;

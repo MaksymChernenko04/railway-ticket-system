@@ -1,4 +1,4 @@
-package com.maksymchernenko.railwayticketsystem.service;
+package com.maksymchernenko.railwayticketsystem.service.reference;
 
 import com.maksymchernenko.railwayticketsystem.dto.reference.ReferenceCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.reference.ReferenceResponse;
@@ -29,7 +29,7 @@ import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
-public class ReferenceService {
+public class ReferenceServiceImpl implements ReferenceService {
 
     private static final BigDecimal ZERO = BigDecimal.ZERO;
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");

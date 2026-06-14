@@ -6,7 +6,7 @@ import com.maksymchernenko.railwayticketsystem.dto.auth.RefreshTokenRequest;
 import com.maksymchernenko.railwayticketsystem.dto.auth.RegisterRequest;
 import com.maksymchernenko.railwayticketsystem.dto.auth.UserResponse;
 import com.maksymchernenko.railwayticketsystem.security.CustomUserDetails;
-import com.maksymchernenko.railwayticketsystem.service.AuthService;
+import com.maksymchernenko.railwayticketsystem.service.auth.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

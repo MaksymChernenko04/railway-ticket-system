@@ -2,7 +2,7 @@ package com.maksymchernenko.railwayticketsystem.controller.admin;
 
 import com.maksymchernenko.railwayticketsystem.dto.reference.ReferenceCreateRequest;
 import com.maksymchernenko.railwayticketsystem.dto.reference.ReferenceResponse;
-import com.maksymchernenko.railwayticketsystem.service.ReferenceService;
+import com.maksymchernenko.railwayticketsystem.service.reference.ReferenceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
