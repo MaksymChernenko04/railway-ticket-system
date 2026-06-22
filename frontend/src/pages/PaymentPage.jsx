@@ -124,7 +124,7 @@ export function PaymentPage() {
         minHeight: "calc(100vh - 64px)",
         py: 5,
         background:
-          "radial-gradient(circle at top right, rgba(79,138,91,0.18), transparent 28%), linear-gradient(135deg, #f4f7fb 0%, #edf7f3 100%)",
+          "radial-gradient(circle at top right, rgba(79,138,91,0.18), transparent 28%), linear-gradient(135deg, #e8eef2 0%, #dde9e3 100%)",
       }}
     >
       <Container maxWidth="md">

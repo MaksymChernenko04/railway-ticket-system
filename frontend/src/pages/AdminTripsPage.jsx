@@ -35,6 +35,7 @@ import {
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { nextSortState, SortableTableCell, sortRows } from "../components/SortableTableCell.jsx";
 
 const emptyForm = {
   trainId: "",
@@ -127,8 +128,8 @@ function renderCorridor(sx) {
     <Box
       sx={{
         borderRadius: 1.5,
-        bgcolor: "rgba(90,108,95,0.08)",
-        border: "1px solid rgba(90,108,95,0.12)",
+        bgcolor: "rgba(112,126,136,0.24)",
+        border: "1px solid rgba(70,84,92,0.34)",
         ...sx,
       }}
     />
@@ -148,8 +149,8 @@ function selectableSeatSx(seat, selected, orientation = "seat", readOnly = false
     width: isBerth ? (isLong ? 106 : 46) : 44,
     height: isBerth ? (isLong ? 34 : 62) : 44,
     borderRadius: 2,
-    border: selected ? "2px solid #3f744a" : "1px solid rgba(36,73,45,0.22)",
-    bgcolor: selected ? "rgba(79,138,91,0.22)" : "rgba(255,255,255,0.76)",
+    border: selected ? "2px solid #2f6339" : "1px solid rgba(47,99,57,0.44)",
+    bgcolor: selected ? "rgba(79,138,91,0.30)" : "rgba(255,255,255,0.92)",
     color: "text.primary",
     display: "grid",
     placeItems: "center",
@@ -165,7 +166,7 @@ function selectableSeatSx(seat, selected, orientation = "seat", readOnly = false
     "&:hover": readOnly
       ? {}
       : {
-          bgcolor: selected ? "rgba(79,138,91,0.28)" : "rgba(79,138,91,0.10)",
+          bgcolor: selected ? "rgba(79,138,91,0.36)" : "rgba(79,138,91,0.16)",
           transform: "translateY(-1px)",
         },
   };
@@ -189,8 +190,8 @@ function renderSelectableSeat(
           width: isBerth ? (isLong ? 106 : 46) : 44,
           height: isBerth ? (isLong ? 34 : 62) : 44,
           borderRadius: 2,
-          border: "1px dashed rgba(90,108,95,0.18)",
-          bgcolor: "rgba(90,108,95,0.04)",
+          border: "1px dashed rgba(88,96,92,0.34)",
+          bgcolor: "rgba(112,126,136,0.10)",
         }}
       />
     );
@@ -236,8 +237,8 @@ function renderCoupeBlock(rowNumber, rowSeats, lux, selectedSeatIds, onToggleSea
           alignItems: "center",
           p: 0.75,
           borderRadius: 2,
-          border: "1px solid rgba(79,138,91,0.18)",
-          bgcolor: "rgba(255,255,255,0.7)",
+          border: "1px solid rgba(47,99,57,0.36)",
+          bgcolor: "rgba(246,249,244,0.94)",
         }}
       >
         <Stack spacing={0.5}>
@@ -389,9 +390,9 @@ function renderTripSeatScheme(tripCar, onToggleSeat, readOnly = false) {
     <Box
       sx={{
         overflowX: "auto",
-        border: "1px solid rgba(79,138,91,0.18)",
+        border: "1px solid rgba(47,99,57,0.30)",
         borderRadius: 2,
-        bgcolor: "rgba(255,255,255,0.72)",
+        bgcolor: "rgba(240,246,241,0.88)",
         p: 2,
       }}
     >
@@ -421,6 +422,8 @@ export function AdminTripsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
+  const [sort, setSort] = useState({ field: "departureAtUtc", direction: "desc" });
+  const [detailsStopsSort, setDetailsStopsSort] = useState({ field: "ordinal", direction: "asc" });
 
   const selectedRoute = useMemo(
     () => routes.find((route) => String(route.id) === String(form.routeId)),
@@ -430,6 +433,24 @@ export function AdminTripsPage() {
   const selectedCarIds = useMemo(() => new Set(tripCars.map((tripCar) => String(tripCar.carId))), [tripCars]);
   const selectableCars = cars.filter((car) => !selectedCarIds.has(String(car.id)));
   const selectedStops = stops.filter((stop) => stop.selected);
+  const sortedTrips = useMemo(
+    () => sortRows(tripsPage?.content ?? [], sort, {
+      stopCount: (trip) => Number(trip.stopCount),
+      carCount: (trip) => Number(trip.carCount),
+      seatCount: (trip) => Number(trip.seatCount),
+    }),
+    [tripsPage, sort],
+  );
+  const sortedDetailsStops = useMemo(
+    () => sortRows(selectedTrip?.stops ?? [], detailsStopsSort, {
+      ordinal: (stop) => Number(stop.ordinal),
+      platform: (stop) => Number(stop.platform),
+      track: (stop) => Number(stop.track),
+      arrivalOffsetMinutes: (stop) => Number(stop.arrivalOffsetMinutes),
+      departureOffsetMinutes: (stop) => Number(stop.departureOffsetMinutes),
+    }),
+    [selectedTrip, detailsStopsSort],
+  );
 
   async function loadTrips(page = pageIndex) {
     setIsLoading(true);
@@ -673,13 +694,21 @@ export function AdminTripsPage() {
     setIsDetailsLoading(false);
   }
 
+  function handleSort(field) {
+    setSort((current) => nextSortState(current, field));
+  }
+
+  function handleDetailsStopsSort(field) {
+    setDetailsStopsSort((current) => nextSortState(current, field));
+  }
+
   return (
     <Box
       sx={{
         minHeight: "100vh",
         py: 5,
         background:
-          "radial-gradient(circle at top left, rgba(92,133,255,0.18), transparent 26%), linear-gradient(135deg, #f4f7fb 0%, #edf7f3 100%)",
+          "radial-gradient(circle at top left, rgba(92,133,255,0.18), transparent 26%), linear-gradient(135deg, #e8eef2 0%, #dde9e3 100%)",
       }}
     >
       <Container maxWidth="xl">
@@ -951,17 +980,17 @@ export function AdminTripsPage() {
                         <Table>
                           <TableHead>
                             <TableRow>
-                              <TableCell>Departure</TableCell>
-                              <TableCell>Train</TableCell>
-                              <TableCell>Route</TableCell>
-                              <TableCell>Stops</TableCell>
-                              <TableCell>Cars</TableCell>
-                              <TableCell>Seats</TableCell>
+                              <SortableTableCell sort={sort} field="departureAtUtc" onSort={handleSort}>Departure</SortableTableCell>
+                              <SortableTableCell sort={sort} field="trainNumber" onSort={handleSort}>Train</SortableTableCell>
+                              <SortableTableCell sort={sort} field="routeNumber" onSort={handleSort}>Route</SortableTableCell>
+                              <SortableTableCell sort={sort} field="stopCount" onSort={handleSort}>Stops</SortableTableCell>
+                              <SortableTableCell sort={sort} field="carCount" onSort={handleSort}>Cars</SortableTableCell>
+                              <SortableTableCell sort={sort} field="seatCount" onSort={handleSort}>Seats</SortableTableCell>
                               <TableCell>Action</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {tripsPage.content.map((trip) => (
+                            {sortedTrips.map((trip) => (
                               <TableRow key={trip.id} hover>
                                 <TableCell>{toDateTimeLocal(trip.departureAtUtc)}</TableCell>
                                 <TableCell>
@@ -1047,16 +1076,16 @@ export function AdminTripsPage() {
                   <Table>
                     <TableHead>
                       <TableRow>
-                        <TableCell>Station</TableCell>
-                        <TableCell>Platform</TableCell>
-                        <TableCell>Track</TableCell>
-                        <TableCell>Arrival</TableCell>
-                        <TableCell>Departure</TableCell>
-                        <TableCell>Offsets</TableCell>
+                        <SortableTableCell sort={detailsStopsSort} field="ordinal" onSort={handleDetailsStopsSort}>Station</SortableTableCell>
+                        <SortableTableCell sort={detailsStopsSort} field="platform" onSort={handleDetailsStopsSort}>Platform</SortableTableCell>
+                        <SortableTableCell sort={detailsStopsSort} field="track" onSort={handleDetailsStopsSort}>Track</SortableTableCell>
+                        <SortableTableCell sort={detailsStopsSort} field="arrivalAtUtc" onSort={handleDetailsStopsSort}>Arrival</SortableTableCell>
+                        <SortableTableCell sort={detailsStopsSort} field="departureAtUtc" onSort={handleDetailsStopsSort}>Departure</SortableTableCell>
+                        <SortableTableCell sort={detailsStopsSort} field="arrivalOffsetMinutes" onSort={handleDetailsStopsSort}>Offsets</SortableTableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {selectedTrip.stops.map((stop) => (
+                      {sortedDetailsStops.map((stop) => (
                         <TableRow key={stop.id}>
                           <TableCell>
                             {stop.ordinal}. {stop.stationName} ({stop.stationCountryCode})

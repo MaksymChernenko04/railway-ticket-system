@@ -25,6 +25,7 @@ import {
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { nextSortState, SortableTableCell, sortRows } from "../components/SortableTableCell.jsx";
 
 const emptyForm = {
   routeId: "",
@@ -44,10 +45,15 @@ export function AdminRouteStopsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
+  const [sort, setSort] = useState({ field: "ordinal", direction: "asc" });
 
   const selectedRoute = useMemo(
     () => routes.find((route) => String(route.id) === String(selectedRouteId)),
     [routes, selectedRouteId],
+  );
+  const sortedRouteStops = useMemo(
+    () => sortRows(routeStopsPage?.content ?? [], sort, { ordinal: (routeStop) => Number(routeStop.ordinal) }),
+    [routeStopsPage, sort],
   );
 
   async function loadRouteStops(page = pageIndex, routeId = selectedRouteId) {
@@ -145,13 +151,17 @@ export function AdminRouteStopsPage() {
     }
   }
 
+  function handleSort(field) {
+    setSort((current) => nextSortState(current, field));
+  }
+
   return (
     <Box
       sx={{
         minHeight: "100vh",
         py: 5,
         background:
-          "radial-gradient(circle at top left, rgba(92,133,255,0.18), transparent 26%), linear-gradient(135deg, #f4f7fb 0%, #edf7f3 100%)",
+          "radial-gradient(circle at top left, rgba(92,133,255,0.18), transparent 26%), linear-gradient(135deg, #e8eef2 0%, #dde9e3 100%)",
       }}
     >
       <Container maxWidth="xl">
@@ -319,15 +329,15 @@ export function AdminRouteStopsPage() {
                         <Table>
                           <TableHead>
                             <TableRow>
-                              <TableCell>Ordinal</TableCell>
-                              <TableCell>Route</TableCell>
-                              <TableCell>Station</TableCell>
-                              <TableCell>Country</TableCell>
+                              <SortableTableCell sort={sort} field="ordinal" onSort={handleSort}>Ordinal</SortableTableCell>
+                              <SortableTableCell sort={sort} field="routeNumber" onSort={handleSort}>Route</SortableTableCell>
+                              <SortableTableCell sort={sort} field="stationName" onSort={handleSort}>Station</SortableTableCell>
+                              <SortableTableCell sort={sort} field="stationCountryCode" onSort={handleSort}>Country</SortableTableCell>
                               <TableCell>Action</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {routeStopsPage.content.map((routeStop) => (
+                            {sortedRouteStops.map((routeStop) => (
                               <TableRow key={routeStop.id} hover>
                                 <TableCell>{routeStop.ordinal}</TableCell>
                                 <TableCell>{routeStop.routeNumber}</TableCell>

@@ -56,7 +56,7 @@ export function RegisterPage() {
         display: "flex",
         alignItems: "center",
         background:
-          "radial-gradient(circle at top left, rgba(121,168,132,0.22), transparent 26%), linear-gradient(135deg, #f4f8f2 0%, #e8f0e6 100%)",
+          "radial-gradient(circle at top left, rgba(121,168,132,0.22), transparent 26%), linear-gradient(135deg, #e7efe5 0%, #dce7d9 100%)",
         py: 6,
       }}
     >

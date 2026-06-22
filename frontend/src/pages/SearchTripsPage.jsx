@@ -2,6 +2,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import TrainIcon from "@mui/icons-material/Train";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Card,
@@ -9,10 +10,6 @@ import {
   Chip,
   CircularProgress,
   Container,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
   Stack,
   TextField,
   Typography,
@@ -79,6 +76,8 @@ export function SearchTripsPage() {
     destinationStationId: "",
     travelDate: todayInputValue,
   });
+  const [originInput, setOriginInput] = useState("");
+  const [destinationInput, setDestinationInput] = useState("");
   const [trips, setTrips] = useState([]);
   const [error, setError] = useState("");
   const [isLoadingStations, setIsLoadingStations] = useState(true);
@@ -88,6 +87,14 @@ export function SearchTripsPage() {
   const destinationStations = useMemo(
     () => stations.filter((station) => String(station.id) !== String(form.originStationId)),
     [stations, form.originStationId],
+  );
+  const selectedOriginStation = useMemo(
+    () => stations.find((station) => String(station.id) === String(form.originStationId)) ?? null,
+    [stations, form.originStationId],
+  );
+  const selectedDestinationStation = useMemo(
+    () => stations.find((station) => String(station.id) === String(form.destinationStationId)) ?? null,
+    [stations, form.destinationStationId],
   );
 
   useEffect(() => {
@@ -105,11 +112,6 @@ export function SearchTripsPage() {
 
         const loadedStations = data.content ?? [];
         setStations(loadedStations);
-        setForm((current) => ({
-          ...current,
-          originStationId: current.originStationId || String(loadedStations[0]?.id ?? ""),
-          destinationStationId: current.destinationStationId || String(loadedStations[1]?.id ?? ""),
-        }));
       } catch (loadError) {
         if (isActive) {
           setError(loadError.message);
@@ -136,6 +138,10 @@ export function SearchTripsPage() {
       }
       return next;
     });
+  }
+
+  function formatStationOption(station) {
+    return station ? `${station.name} (${station.countryCode})` : "";
   }
 
   async function handleSearch(event) {
@@ -184,7 +190,7 @@ export function SearchTripsPage() {
         minHeight: "calc(100vh - 64px)",
         py: 5,
         background:
-          "radial-gradient(circle at top left, rgba(79,138,91,0.20), transparent 28%), linear-gradient(135deg, #f4f7fb 0%, #edf7f3 100%)",
+          "radial-gradient(circle at top left, rgba(79,138,91,0.20), transparent 28%), linear-gradient(135deg, #e8eef2 0%, #dde9e3 100%)",
       }}
     >
       <Container maxWidth="xl">
@@ -245,37 +251,64 @@ export function SearchTripsPage() {
                     <Typography variant="h5">Search details</Typography>
                   </Box>
 
-                  <FormControl fullWidth required disabled={isLoadingStations}>
-                    <InputLabel id="origin-station-label">Origin station</InputLabel>
-                    <Select
-                      labelId="origin-station-label"
-                      label="Origin station"
-                      value={form.originStationId}
-                      onChange={(event) => updateForm({ originStationId: event.target.value })}
-                    >
-                      {stations.map((station) => (
-                        <MenuItem key={station.id} value={String(station.id)}>
-                          {station.name} ({station.countryCode})
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <Autocomplete
+                    options={stations}
+                    value={selectedOriginStation}
+                    inputValue={originInput}
+                    open={
+                      originInput.trim().length > 0 &&
+                      originInput !== formatStationOption(selectedOriginStation)
+                    }
+                    disabled={isLoadingStations}
+                    getOptionLabel={formatStationOption}
+                    isOptionEqualToValue={(option, value) => String(option.id) === String(value.id)}
+                    noOptionsText="No matching stations"
+                    onInputChange={(_, value, reason) => {
+                      setOriginInput(value);
+                      if (reason === "input" && selectedOriginStation && value !== formatStationOption(selectedOriginStation)) {
+                        updateForm({ originStationId: "" });
+                      }
+                    }}
+                    onChange={(_, station) => {
+                      if (station && String(station.id) === String(form.destinationStationId)) {
+                        setDestinationInput("");
+                      }
+                      updateForm({ originStationId: station ? String(station.id) : "" });
+                    }}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Origin station" required fullWidth />
+                    )}
+                  />
 
-                  <FormControl fullWidth required disabled={isLoadingStations}>
-                    <InputLabel id="destination-station-label">Destination station</InputLabel>
-                    <Select
-                      labelId="destination-station-label"
-                      label="Destination station"
-                      value={form.destinationStationId}
-                      onChange={(event) => updateForm({ destinationStationId: event.target.value })}
-                    >
-                      {destinationStations.map((station) => (
-                        <MenuItem key={station.id} value={String(station.id)}>
-                          {station.name} ({station.countryCode})
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <Autocomplete
+                    options={destinationStations}
+                    value={selectedDestinationStation}
+                    inputValue={destinationInput}
+                    open={
+                      destinationInput.trim().length > 0 &&
+                      destinationInput !== formatStationOption(selectedDestinationStation)
+                    }
+                    disabled={isLoadingStations}
+                    getOptionLabel={formatStationOption}
+                    isOptionEqualToValue={(option, value) => String(option.id) === String(value.id)}
+                    noOptionsText="No matching stations"
+                    onInputChange={(_, value, reason) => {
+                      setDestinationInput(value);
+                      if (
+                        reason === "input" &&
+                        selectedDestinationStation &&
+                        value !== formatStationOption(selectedDestinationStation)
+                      ) {
+                        updateForm({ destinationStationId: "" });
+                      }
+                    }}
+                    onChange={(_, station) => {
+                      updateForm({ destinationStationId: station ? String(station.id) : "" });
+                    }}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Destination station" required fullWidth />
+                    )}
+                  />
 
                   <TextField
                     label="Travel date"

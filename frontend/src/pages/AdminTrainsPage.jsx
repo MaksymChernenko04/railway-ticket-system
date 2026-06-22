@@ -23,8 +23,9 @@ import {
     TextField,
     Typography,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { nextSortState, SortableTableCell, sortRows } from "../components/SortableTableCell.jsx";
 
 const emptyForm = {
     typeCode: "",
@@ -42,6 +43,11 @@ export function AdminTrainsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [pageIndex, setPageIndex] = useState(0);
+    const [sort, setSort] = useState({ field: "number", direction: "asc" });
+    const sortedTrains = useMemo(
+        () => sortRows(trainsPage?.content ?? [], sort),
+        [trainsPage, sort],
+    );
 
     async function loadTrains(page = pageIndex) {
         setIsLoading(true);
@@ -113,13 +119,17 @@ export function AdminTrainsPage() {
         }
     }
 
+    function handleSort(field) {
+        setSort((current) => nextSortState(current, field));
+    }
+
     return (
         <Box
             sx={{
                 minHeight: "100vh",
                 py: 5,
                 background:
-                    "radial-gradient(circle at top left, rgba(92,133,255,0.18), transparent 26%), linear-gradient(135deg, #f4f7fb 0%, #edf7f3 100%)",
+                    "radial-gradient(circle at top left, rgba(92,133,255,0.18), transparent 26%), linear-gradient(135deg, #e8eef2 0%, #dde9e3 100%)",
             }}
         >
             <Container maxWidth="xl">
@@ -267,14 +277,14 @@ export function AdminTrainsPage() {
                                                 <Table>
                                                     <TableHead>
                                                         <TableRow>
-                                                            <TableCell>Number</TableCell>
-                                                            <TableCell>Type</TableCell>
-                                                            <TableCell>Name</TableCell>
+                                                            <SortableTableCell sort={sort} field="number" onSort={handleSort}>Number</SortableTableCell>
+                                                            <SortableTableCell sort={sort} field="typeCode" onSort={handleSort}>Type</SortableTableCell>
+                                                            <SortableTableCell sort={sort} field="name" onSort={handleSort}>Name</SortableTableCell>
                                                             <TableCell>Action</TableCell>
                                                         </TableRow>
                                                     </TableHead>
                                                     <TableBody>
-                                                        {trainsPage.content.map((train) => (
+                                                        {sortedTrains.map((train) => (
                                                             <TableRow key={train.id} hover>
                                                                 <TableCell>{train.number}</TableCell>
                                                                 <TableCell>{train.typeCode}</TableCell>

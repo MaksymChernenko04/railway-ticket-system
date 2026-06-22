@@ -2,7 +2,7 @@ import { Box, CircularProgress, Typography } from "@mui/material";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
-export function ProtectedRoute({ children, requiredRole }) {
+export function ProtectedRoute({ children, requiredRole, forbiddenRole }) {
   const { isBootstrapping, isAuthenticated, user } = useAuth();
   const location = useLocation();
 
@@ -30,6 +30,10 @@ export function ProtectedRoute({ children, requiredRole }) {
   }
 
   if (requiredRole && user?.role !== requiredRole) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (forbiddenRole && user?.role === forbiddenRole) {
     return <Navigate to="/" replace />;
   }
 

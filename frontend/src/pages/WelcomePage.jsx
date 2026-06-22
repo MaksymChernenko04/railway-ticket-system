@@ -26,7 +26,7 @@ export function WelcomePage() {
                 display: "flex",
                 alignItems: "center",
                 background:
-                    "radial-gradient(circle at top left, rgba(92,133,255,0.18), transparent 26%), linear-gradient(135deg, #f4f7fb 0%, #edf7f3 100%)",
+                    "radial-gradient(circle at top left, rgba(92,133,255,0.18), transparent 26%), linear-gradient(135deg, #e8eef2 0%, #dde9e3 100%)",
                 py: 6,
             }}
         >

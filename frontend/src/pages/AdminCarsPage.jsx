@@ -34,8 +34,9 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { nextSortState, SortableTableCell, sortRows } from "../components/SortableTableCell.jsx";
 
 const emptyCarForm = {
   typeCode: "",
@@ -138,8 +139,8 @@ function renderSeatPlace(seat, onDeleteSeat) {
         width: 44,
         height: 44,
         borderRadius: 2,
-        border: "1px dashed rgba(90,108,95,0.2)",
-        bgcolor: "rgba(90,108,95,0.04)",
+        border: "1px dashed rgba(88,96,92,0.34)",
+        bgcolor: "rgba(112,126,136,0.10)",
       }}
     />
   );
@@ -156,8 +157,8 @@ function seatSx(direction) {
     width: 44,
     height: 44,
     borderRadius: 2,
-    border: "1px solid rgba(36,73,45,0.28)",
-    bgcolor: "rgba(79,138,91,0.12)",
+    border: "1px solid rgba(47,99,57,0.44)",
+    bgcolor: "rgba(255,255,255,0.92)",
     display: "grid",
     placeItems: "center",
     position: "relative",
@@ -172,8 +173,8 @@ function berthSx(level, orientation) {
     width: isLong ? 106 : 46,
     height: isLong ? 34 : 62,
     borderRadius: 2,
-    border: "1px solid rgba(36,73,45,0.28)",
-    bgcolor: level === "upper" ? "rgba(71, 99, 155, 0.14)" : "rgba(79,138,91,0.16)",
+    border: "1px solid rgba(47,99,57,0.44)",
+    bgcolor: level === "upper" ? "rgba(94, 122, 176, 0.20)" : "rgba(255,255,255,0.92)",
     display: "grid",
     placeItems: "center",
     position: "relative",
@@ -189,8 +190,8 @@ function berthPlaceholderSx(orientation) {
     width: isLong ? 106 : 46,
     height: isLong ? 34 : 62,
     borderRadius: 2,
-    border: "1px dashed rgba(90,108,95,0.18)",
-    bgcolor: "rgba(90,108,95,0.04)",
+    border: "1px dashed rgba(88,96,92,0.34)",
+    bgcolor: "rgba(112,126,136,0.10)",
   };
 }
 
@@ -199,8 +200,8 @@ function renderCorridor(sx) {
     <Box
       sx={{
         borderRadius: 1.5,
-        bgcolor: "rgba(90,108,95,0.08)",
-        border: "1px solid rgba(90,108,95,0.12)",
+        bgcolor: "rgba(112,126,136,0.24)",
+        border: "1px solid rgba(70,84,92,0.34)",
         ...sx,
       }}
     />
@@ -226,8 +227,8 @@ function renderCoupeBlock(rowNumber, rowSeats, lux, onDeleteSeat) {
           alignItems: "center",
           p: 0.75,
           borderRadius: 2,
-          border: "1px solid rgba(79,138,91,0.18)",
-          bgcolor: "rgba(255,255,255,0.7)",
+          border: "1px solid rgba(47,99,57,0.36)",
+          bgcolor: "rgba(246,249,244,0.94)",
         }}
       >
         <Stack spacing={0.5}>
@@ -360,9 +361,9 @@ function renderSeatScheme(car, seats, onDeleteSeat) {
     <Box
       sx={{
         overflowX: "auto",
-        border: "1px solid rgba(79,138,91,0.18)",
+        border: "1px solid rgba(47,99,57,0.30)",
         borderRadius: 3,
-        bgcolor: "rgba(255,255,255,0.72)",
+        bgcolor: "rgba(240,246,241,0.88)",
         p: 2,
       }}
     >
@@ -390,10 +391,15 @@ export function AdminCarsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSeatSubmitting, setIsSeatSubmitting] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
+  const [sort, setSort] = useState({ field: "number", direction: "asc" });
 
   const isSeatsDialogOpen = Boolean(selectedCar);
   const isCarsLoaded = isLoading === false;
   const hasCars = Boolean(carsPage?.content?.length);
+  const sortedCars = useMemo(
+    () => sortRows(carsPage?.content ?? [], sort),
+    [carsPage, sort],
+  );
 
   async function loadCars(page = pageIndex) {
     setIsLoading(true);
@@ -530,13 +536,17 @@ export function AdminCarsPage() {
     setSeatForm(emptySeatForm);
   }
 
+  function handleSort(field) {
+    setSort((current) => nextSortState(current, field));
+  }
+
   return (
     <Box
       sx={{
         minHeight: "100vh",
         py: 5,
         background:
-          "radial-gradient(circle at top left, rgba(92,133,255,0.18), transparent 26%), linear-gradient(135deg, #f4f7fb 0%, #edf7f3 100%)",
+          "radial-gradient(circle at top left, rgba(92,133,255,0.18), transparent 26%), linear-gradient(135deg, #e8eef2 0%, #dde9e3 100%)",
       }}
     >
       <Container maxWidth="xl">
@@ -672,14 +682,14 @@ export function AdminCarsPage() {
                         <Table>
                           <TableHead>
                             <TableRow>
-                              <TableCell>Number</TableCell>
-                              <TableCell>Type</TableCell>
-                              <TableCell>Accessible</TableCell>
+                              <SortableTableCell sort={sort} field="number" onSort={handleSort}>Number</SortableTableCell>
+                              <SortableTableCell sort={sort} field="typeCode" onSort={handleSort}>Type</SortableTableCell>
+                              <SortableTableCell sort={sort} field="accessible" onSort={handleSort}>Accessible</SortableTableCell>
                               <TableCell>Action</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {carsPage.content.map((car) => (
+                            {sortedCars.map((car) => (
                               <TableRow key={car.id} hover>
                                 <TableCell>{car.number}</TableCell>
                                 <TableCell>{car.typeCode}</TableCell>

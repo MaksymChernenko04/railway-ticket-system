@@ -23,8 +23,9 @@ import {
     TextField,
     Typography,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { nextSortState, SortableTableCell, sortRows } from "../components/SortableTableCell.jsx";
 
 const emptyForm = {
     number: "",
@@ -43,6 +44,11 @@ export function AdminRoutesPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [pageIndex, setPageIndex] = useState(0);
+    const [sort, setSort] = useState({ field: "number", direction: "asc" });
+    const sortedRoutes = useMemo(
+        () => sortRows(routesPage?.content ?? [], sort, { basePrice: (route) => Number(route.basePrice) }),
+        [routesPage, sort],
+    );
 
     async function loadRoutes(page = pageIndex) {
         setIsLoading(true);
@@ -114,13 +120,17 @@ export function AdminRoutesPage() {
         }
     }
 
+    function handleSort(field) {
+        setSort((current) => nextSortState(current, field));
+    }
+
     return (
         <Box
             sx={{
                 minHeight: "100vh",
                 py: 5,
                 background:
-                    "radial-gradient(circle at top left, rgba(92,133,255,0.18), transparent 26%), linear-gradient(135deg, #f4f7fb 0%, #edf7f3 100%)",
+                    "radial-gradient(circle at top left, rgba(92,133,255,0.18), transparent 26%), linear-gradient(135deg, #e8eef2 0%, #dde9e3 100%)",
             }}
         >
             <Container maxWidth="xl">
@@ -282,15 +292,15 @@ export function AdminRoutesPage() {
                                                 <Table>
                                                     <TableHead>
                                                         <TableRow>
-                                                            <TableCell>Number</TableCell>
-                                                            <TableCell>Name</TableCell>
-                                                            <TableCell>Base price</TableCell>
-                                                            <TableCell>Currency</TableCell>
+                                                            <SortableTableCell sort={sort} field="number" onSort={handleSort}>Number</SortableTableCell>
+                                                            <SortableTableCell sort={sort} field="name" onSort={handleSort}>Name</SortableTableCell>
+                                                            <SortableTableCell sort={sort} field="basePrice" onSort={handleSort}>Base price</SortableTableCell>
+                                                            <SortableTableCell sort={sort} field="currencyCode" onSort={handleSort}>Currency</SortableTableCell>
                                                             <TableCell>Action</TableCell>
                                                         </TableRow>
                                                     </TableHead>
                                                     <TableBody>
-                                                        {routesPage.content.map((route) => (
+                                                        {sortedRoutes.map((route) => (
                                                             <TableRow key={route.id} hover>
                                                                 <TableCell>{route.number}</TableCell>
                                                                 <TableCell>{route.name}</TableCell>

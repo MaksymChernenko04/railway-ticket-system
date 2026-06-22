@@ -49,6 +49,7 @@ public class ApiExceptionHandler {
             TripClientValidationException.class,
             EntityAlreadyExistsException.class,
             ReferenceValidationException.class,
+            IllegalArgumentException.class,
             BadCredentialsException.class,
             UsernameNotFoundException.class
     })

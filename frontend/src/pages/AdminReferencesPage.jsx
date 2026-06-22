@@ -23,6 +23,7 @@ import {
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { nextSortState, SortableTableCell, sortRows } from "../components/SortableTableCell.jsx";
 
 const referenceTypes = [
   { type: "train-types", label: "Train types", valueField: "priceMultiplier", valueLabel: "Price multiplier" },
@@ -48,10 +49,17 @@ export function AdminReferencesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
+  const [sort, setSort] = useState({ field: "code", direction: "asc" });
 
   const config = useMemo(
     () => referenceTypes.find((referenceType) => referenceType.type === activeType) ?? referenceTypes[0],
     [activeType],
+  );
+  const sortedReferences = useMemo(
+    () => sortRows(referencesPage?.content ?? [], sort, config.valueField ? {
+      [config.valueField]: (reference) => Number(reference[config.valueField]),
+    } : {}),
+    [referencesPage, sort, config],
   );
 
   async function loadReferences(page = pageIndex, type = activeType) {
@@ -78,6 +86,7 @@ export function AdminReferencesPage() {
     setFeedback("");
     setError("");
     setForm(emptyForm);
+    setSort({ field: "code", direction: "asc" });
     await loadReferences(0, nextType);
   }
 
@@ -133,13 +142,17 @@ export function AdminReferencesPage() {
     return reference[config.valueField];
   }
 
+  function handleSort(field) {
+    setSort((current) => nextSortState(current, field));
+  }
+
   return (
     <Box
       sx={{
         minHeight: "100vh",
         py: 5,
         background:
-          "radial-gradient(circle at top left, rgba(92,133,255,0.18), transparent 26%), linear-gradient(135deg, #f4f7fb 0%, #edf7f3 100%)",
+          "radial-gradient(circle at top left, rgba(92,133,255,0.18), transparent 26%), linear-gradient(135deg, #e8eef2 0%, #dde9e3 100%)",
       }}
     >
       <Container maxWidth="xl">
@@ -287,13 +300,17 @@ export function AdminReferencesPage() {
                         <Table>
                           <TableHead>
                             <TableRow>
-                              <TableCell>Code</TableCell>
-                              {config.valueField ? <TableCell>{config.valueLabel}</TableCell> : null}
+                              <SortableTableCell sort={sort} field="code" onSort={handleSort}>Code</SortableTableCell>
+                              {config.valueField ? (
+                                <SortableTableCell sort={sort} field={config.valueField} onSort={handleSort}>
+                                  {config.valueLabel}
+                                </SortableTableCell>
+                              ) : null}
                               <TableCell>Action</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {referencesPage.content.map((reference) => (
+                            {sortedReferences.map((reference) => (
                               <TableRow key={reference.code} hover>
                                 <TableCell>{reference.code}</TableCell>
                                 {config.valueField ? <TableCell>{formatValue(reference)}</TableCell> : null}

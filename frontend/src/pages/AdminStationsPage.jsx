@@ -26,8 +26,9 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { nextSortState, SortableTableCell, sortRows } from "../components/SortableTableCell.jsx";
 
 const emptyForm = {
   name: "",
@@ -48,6 +49,11 @@ export function AdminStationsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
+  const [sort, setSort] = useState({ field: "name", direction: "asc" });
+  const sortedStations = useMemo(
+    () => sortRows(stationsPage?.content ?? [], sort),
+    [stationsPage, sort],
+  );
 
   async function loadStations(page = pageIndex) {
     setIsLoading(true);
@@ -123,13 +129,17 @@ export function AdminStationsPage() {
     }
   }
 
+  function handleSort(field) {
+    setSort((current) => nextSortState(current, field));
+  }
+
   return (
     <Box
       sx={{
         minHeight: "100vh",
         py: 5,
         background:
-            "radial-gradient(circle at top left, rgba(92,133,255,0.18), transparent 26%), linear-gradient(135deg, #f4f7fb 0%, #edf7f3 100%)",
+            "radial-gradient(circle at top left, rgba(92,133,255,0.18), transparent 26%), linear-gradient(135deg, #e8eef2 0%, #dde9e3 100%)",
       }}
     >
       <Container maxWidth="xl">
@@ -296,16 +306,16 @@ export function AdminStationsPage() {
                         <Table>
                           <TableHead>
                             <TableRow>
-                              <TableCell>Name</TableCell>
-                              <TableCell>Country</TableCell>
-                              <TableCell>Timezone</TableCell>
-                              <TableCell>Address</TableCell>
-                              <TableCell>Accessible</TableCell>
+                              <SortableTableCell sort={sort} field="name" onSort={handleSort}>Name</SortableTableCell>
+                              <SortableTableCell sort={sort} field="countryCode" onSort={handleSort}>Country</SortableTableCell>
+                              <SortableTableCell sort={sort} field="timezone" onSort={handleSort}>Timezone</SortableTableCell>
+                              <SortableTableCell sort={sort} field="address" onSort={handleSort}>Address</SortableTableCell>
+                              <SortableTableCell sort={sort} field="accessible" onSort={handleSort}>Accessible</SortableTableCell>
                               <TableCell>Action</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {stationsPage.content.map((station) => (
+                            {sortedStations.map((station) => (
                               <TableRow key={station.id} hover>
                                 <TableCell>{station.name}</TableCell>
                                 <TableCell>{station.countryCode}</TableCell>

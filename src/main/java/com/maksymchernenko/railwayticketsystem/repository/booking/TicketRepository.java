@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 
@@ -161,6 +162,32 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     );
 
     @Query("""
+            select
+                function('date', o.createdAtUtc) as saleDate,
+                t.currency.code as currencyCode,
+                count(t.id) as soldTicketCount,
+                sum(t.price) as totalRevenue,
+                count(distinct o.id) as paidOrderCount
+            from Ticket t
+            join t.order o
+            join t.startTripStop.trip.route r
+            where o.status = :paidStatus
+              and t.status in :ticketStatuses
+              and o.createdAtUtc >= :dateFrom
+              and o.createdAtUtc < :dateTo
+              and (:routeId is null or r.id = :routeId)
+            group by function('date', o.createdAtUtc), t.currency.code
+            order by function('date', o.createdAtUtc) asc
+            """)
+    List<SalesTrendRow> findSalesTrend(
+            @Param("dateFrom") Instant dateFrom,
+            @Param("dateTo") Instant dateTo,
+            @Param("routeId") Long routeId,
+            @Param("paidStatus") Order.Status paidStatus,
+            @Param("ticketStatuses") Collection<Ticket.Status> ticketStatuses
+    );
+
+    @Query("""
             select distinct t.tripSeat.id
             from Ticket t
             join t.order o
@@ -220,5 +247,17 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
         Long getTicketCount();
 
         BigDecimal getTotalRevenue();
+    }
+
+    interface SalesTrendRow {
+        LocalDate getSaleDate();
+
+        String getCurrencyCode();
+
+        Long getSoldTicketCount();
+
+        BigDecimal getTotalRevenue();
+
+        Long getPaidOrderCount();
     }
 }

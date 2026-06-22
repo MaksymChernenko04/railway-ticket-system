@@ -19,6 +19,7 @@ import { SelectSeatsPage } from "./pages/SelectSeatsPage.jsx";
 import { PaymentPage } from "./pages/PaymentPage.jsx";
 import { MyTicketsPage } from "./pages/MyTicketsPage.jsx";
 import { MyOrdersPage } from "./pages/MyOrdersPage.jsx";
+import { TravelAssistantPage } from "./pages/TravelAssistantPage.jsx";
 
 function HomeRedirect() {
   const { user } = useAuth();
@@ -49,10 +50,25 @@ export default function App() {
       >
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/trips/search" element={<SearchTripsPage />} />
+        <Route path="/assistant" element={<TravelAssistantPage />} />
         <Route path="/trips/:tripId/seats" element={<SelectSeatsPage />} />
         <Route path="/payments/:paymentId" element={<PaymentPage />} />
-        <Route path="/tickets" element={<MyTicketsPage />} />
-        <Route path="/orders" element={<MyOrdersPage />} />
+        <Route
+          path="/tickets"
+          element={
+            <ProtectedRoute forbiddenRole="ADMIN">
+              <MyTicketsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/orders"
+          element={
+            <ProtectedRoute forbiddenRole="ADMIN">
+              <MyOrdersPage />
+            </ProtectedRoute>
+          }
+        />
       </Route>
       <Route
         element={

@@ -25,8 +25,15 @@ const guestNavItems = [
 const userNavItems = [
   { to: "/welcome", label: "Welcome" },
   { to: "/trips/search", label: "Search trips" },
+  { to: "/assistant", label: "Assistant" },
   { to: "/tickets", label: "My tickets" },
   { to: "/orders", label: "My orders" },
+];
+
+const adminClientNavItems = [
+  { to: "/welcome", label: "Welcome" },
+  { to: "/trips/search", label: "Search trips" },
+  { to: "/assistant", label: "Assistant" },
 ];
 
 const adminNavItems = [
@@ -69,7 +76,7 @@ function renderNavButton(to, label) {
 
 function getNavItems(isAuthenticated, isAdmin) {
   if (isAdmin) {
-    return [...userNavItems, ...adminNavItems];
+    return [...adminClientNavItems, ...adminNavItems];
   }
 
   return isAuthenticated ? userNavItems : guestNavItems;
