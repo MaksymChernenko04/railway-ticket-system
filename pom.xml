@@ -29,6 +29,9 @@
     <properties>
         <java.version>21</java.version>
         <jwt.version>0.12.6</jwt.version>
+        <jacocoArgLine></jacocoArgLine>
+        <jacoco.exec.file>${java.io.tmpdir}/railway-ticket-system-jacoco.exec</jacoco.exec.file>
+        <jacoco.version>0.8.14</jacoco.version>
         <langchain4j.version>1.11.8</langchain4j.version>
     </properties>
     <dependencies>
@@ -158,6 +161,45 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <configuration>
+                            <destFile>${jacoco.exec.file}</destFile>
+                            <propertyName>jacocoArgLine</propertyName>
+                        </configuration>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>service-coverage-report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <configuration>
+                            <dataFile>${jacoco.exec.file}</dataFile>
+                            <includes>
+                                <include>com/maksymchernenko/railwayticketsystem/service/**/*</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>@{jacocoArgLine}</argLine>
+                    <forkCount>1</forkCount>
+                    <reuseForks>true</reuseForks>
+                </configuration>
             </plugin>
         </plugins>
     </build>
