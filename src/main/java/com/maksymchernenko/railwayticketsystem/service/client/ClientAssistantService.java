@@ -2,108 +2,112 @@ package com.maksymchernenko.railwayticketsystem.service.client;
 
 import com.maksymchernenko.railwayticketsystem.dto.client.ClientAssistantChatRequest;
 import com.maksymchernenko.railwayticketsystem.dto.client.ClientAssistantChatResponse;
-import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
-import dev.langchain4j.service.AiServices;
+import com.maksymchernenko.railwayticketsystem.service.ai.AiAssistantFactory;
+import com.maksymchernenko.railwayticketsystem.service.ai.AiErrorSanitizer;
+import com.maksymchernenko.railwayticketsystem.service.ai.ChatHistoryService;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class ClientAssistantService {
 
-    private static final int MAX_HISTORY_TURNS = 6;
     private static final String SYSTEM_PROMPT = """
-            You are an AI assistant for railway ticket system clients.
-            Use tools to get real backend data before recommending routes, trips, tickets, transfers, prices, seats, or discounts.
-            Return only the final answer for the current client message. Never answer with interim phrases like "I will check", "please wait", "зачекайте", or "я перевірю", because the chat will not send a second assistant message automatically.
-            Answer in the same language as the client's latest manual message. The latest manual client message is more important for language choice than this system prompt, previous messages, or tool data.
-            Give practical, concise recommendations: nearest trips, morning/evening/night options, cheapest options, seat availability, direct route availability, transfer alternatives, and relevant benefits.
-            The user may write a city instead of the full station name. Use the provided station and route catalog to choose the closest exact station or route name from the database before calling tools.
-            A route may be relevant even when the requested stations are not its endpoints, as long as both stations are present in the requested travel order.
-            Do not invent routes, stations, trips, discounts, prices, dates, seat availability, or policies. If tools do not provide enough context, clearly say that you cannot complete the exact task and offer available alternatives such as searching nearby dates, checking direct routes, transfer options, available benefits, or asking the client to clarify station/date.
-            If a client cannot buy a ticket, check direct trips first, then route network or transfers. Explain whether there is no direct route, no scheduled upcoming trip, no seats, or insufficient data.
-            Do not ask for or reveal personal data, payment data, tokens, passwords, internal IDs unless they are trip or route identifiers needed for booking.
-            You cannot create bookings, reserve seats, sell tickets, modify orders, or change system data. Do not ask whether the client wants you to book or buy a ticket. Instead, after giving route or trip options, mention that booking, seat selection, and purchase must be completed in the system UI.
-            Prefer short bullet lists when comparing multiple options. Mention current backend time when answering about nearest or upcoming trips.
+            You are the passenger assistant for a railway ticket system.
+
+            Language:
+            - Answer in the same language as the client's latest message.
+            - Ignore the UI language and recent conversation language when choosing the answer language.
+            - Keep station, train, route, benefit, currency, and code values exactly as tools return them.
+            - Before calling station or trip search tools, normalize city and station names from any user language into the official local spelling used by the railway station in its country.
+            - Handle inflected city names, missing diacritics, transliteration, and common city-only names before assuming that a station is missing.
+
+            Allowed scope:
+            - Help with available stations, directions, routes, trip search, direct trips, transfer options, prices, seats, car types, seat types, train types, train/car reference data, benefits, and route stops.
+            - Use tools before giving factual trip, price, seat, benefit, or route information.
+            - You cannot book, reserve, pay, cancel, or modify anything. Tell the user to complete booking in the UI.
+
+            Strict privacy and safety:
+            - Never provide other users' orders, tickets, passenger data, payments, analytics, revenue, admin recommendations, demand tables, or operational business advice.
+            - If the user asks for sensitive or admin-only data, politely refuse and offer passenger-safe help.
+            - Do not invent routes, stations, trips, dates, prices, discounts, seats, or policies.
+
+            Answer style:
+            - Be concise and useful.
+            - Compare options when the user asks about price, time, direct versus transfer, morning/evening/night, or availability.
+            - When showing trip times, use the tool fields ending with AtLocal. Do not convert or display fields ending with AtUtc unless the user explicitly asks for UTC.
+            - If direct trips are not found, say that clearly and then use transfer options or route network when relevant.
+            - Do not mention a direct trip, transfer station, route, train, date, price, or seat count unless it appears in tool results.
+            - If both direct and transfer tools return empty lists, say that no matching options were found in the searched period. Do not suggest a specific transfer station or route.
+            - If the user asks for a specific date such as today or tomorrow, show only options whose departure date matches that requested date.
+            - Do not send the user to an official app or site; this system UI is the booking interface.
             """;
 
-    private final ClientAssistantTools clientAssistantTools;
-    private final Map<String, Deque<ChatTurn>> conversationHistory = new ConcurrentHashMap<>();
+    private final ClientAssistantTools tools;
+    private final AiAssistantFactory assistantFactory;
+    private final ChatHistoryService chatHistoryService;
+    private final AiErrorSanitizer errorSanitizer;
 
-    @Value("${app.ai.google-api-key:}")
-    private String googleApiKey;
-
-    @Value("${app.ai.model:gemini-2.5-flash-lite}")
-    private String modelName;
-
-    private volatile ClientAiAssistant assistant;
-    private volatile String assistantModelName;
+    @Value("${app.ai.client-chat.max-output-tokens:1400}")
+    private int maxOutputTokens;
 
     public ClientAssistantChatResponse chat(ClientAssistantChatRequest request) {
         String conversationId = StringUtils.hasText(request.conversationId())
                 ? request.conversationId()
                 : UUID.randomUUID().toString();
+        String answer = askModel(prompt(request, conversationId), request.language());
 
-        if (!StringUtils.hasText(googleApiKey)) {
-            return new ClientAssistantChatResponse(conversationId, configurationMissingMessage(request.message()));
-        }
-
-        String prompt = buildPrompt(request, conversationId);
-        String answer;
-        try {
-            answer = getAssistant().chat(prompt);
-        } catch (RuntimeException exception) {
-            log.warn("Client AI assistant request failed. model={}", modelName, exception);
-            answer = temporaryFailureMessage(request.message(), exception);
-        }
-
-        remember(conversationId, request.message(), answer);
+        answer = normalize(answer, unavailableMessage(null, request.language()));
+        chatHistoryService.remember(conversationId, request.message(), answer);
         return new ClientAssistantChatResponse(conversationId, answer);
     }
 
-    private ClientAiAssistant getAssistant() {
-        ClientAiAssistant localAssistant = assistant;
-        if (localAssistant != null && modelName.equals(assistantModelName)) {
-            return localAssistant;
+    private String askModel(String prompt, String language) {
+        if (!assistantFactory.isGoogleConfigured()) {
+            return unavailableMessage(null, language);
         }
 
-        synchronized (this) {
-            if (assistant == null || !modelName.equals(assistantModelName)) {
-                var chatModel = GoogleAiGeminiChatModel.builder()
-                        .apiKey(googleApiKey)
-                        .modelName(modelName)
-                        .temperature(0.2)
-                        .build();
-
-                assistant = AiServices.builder(ClientAiAssistant.class)
-                        .chatModel(chatModel)
-                        .tools(clientAssistantTools)
-                        .build();
-                assistantModelName = modelName;
-            }
-            return assistant;
+        try {
+            return assistantFactory.googleAssistant(ClientAiAssistant.class, tools, 0.25, maxOutputTokens)
+                    .chat(prompt);
+        } catch (RuntimeException exception) {
+            return unavailableMessage(exception, language);
         }
     }
 
-    private String buildPrompt(ClientAssistantChatRequest request, String conversationId) {
+    private String prompt(ClientAssistantChatRequest request, String conversationId) {
         return """
                 Current backend time UTC: %s
+                UI language setting: %s
+                Important: UI language is context only. Do not use it to choose the answer language.
 
-                Station and route catalog:
-                %s
+                Answer language:
+                - Use the language of the latest client message below.
+                - Do not copy the language of recent conversation if the latest message uses another language.
+
+                Tool guidance:
+                - For relative dates such as today, tomorrow, nearest, upcoming, morning, evening, or next week, call getCurrentSystemTime first.
+                - For "today" or "tomorrow", pass an explicit local date yyyy-MM-dd to trip search tools and use days=1.
+                - Passing dateFrom=null means "from the current moment", not the whole current day.
+                - For station or city names, call findStations or findRoutes.
+                - Do not rely on the user-provided spelling as the only query. If a station/city name may be written in a different language, first convert it to the local official city/station spelling for the country where that station is located.
+                - If findStations or a trip search cannot resolve a station name, retry with localized alternatives: main station name, local city name, common transliteration, and spelling with/without diacritics when relevant.
+                - When a user writes only a city name, search for the main passenger station for that city in its local naming convention.
+                - Do not answer that a station or route is missing until localized and transliterated search attempts also fail.
+                - For travel options, call searchDirectTrips first.
+                - Call findTransferOptions only when searchDirectTrips returned no suitable directTrips, or when the client explicitly asks for transfers.
+                - If searchDirectTrips returns directTrips for the requested date, present those direct trips before any transfer ideas.
+                - If findTransferOptions returns no transferOptions, do not invent possible transfer stations.
+                - In trip and transfer results, show departureAtLocal and arrivalAtLocal values exactly as returned. Ignore departureAtUtc and arrivalAtUtc for user-facing time text unless the user asks for UTC.
+                - For discounts and reference questions, call getPassengerReferenceData.
+                - Do not answer with admin analytics or sensitive data; no such tools are available.
 
                 Recent conversation:
                 %s
@@ -112,74 +116,29 @@ public class ClientAssistantService {
                 %s
                 """.formatted(
                 Instant.now(),
-                clientAssistantTools.getCatalogPromptText(),
-                historyText(conversationId),
+                StringUtils.hasText(request.language()) ? request.language().trim() : "not specified",
+                chatHistoryService.format(conversationId, "Client"),
                 request.message()
         );
     }
 
-    private String historyText(String conversationId) {
-        Deque<ChatTurn> history = conversationHistory.get(conversationId);
-        if (history == null || history.isEmpty()) {
-            return "No previous messages.";
-        }
-
-        StringBuilder builder = new StringBuilder();
-        for (ChatTurn turn : history) {
-            builder.append("Client: ").append(turn.userMessage()).append('\n');
-            builder.append("Assistant: ").append(turn.assistantAnswer()).append('\n');
-        }
-        return builder.toString();
+    private String normalize(String answer, String fallback) {
+        return StringUtils.hasText(answer) ? answer.trim() : fallback;
     }
 
-    private void remember(String conversationId, String userMessage, String assistantAnswer) {
-        Deque<ChatTurn> history = conversationHistory.computeIfAbsent(conversationId, ignored -> new ArrayDeque<>());
-        synchronized (history) {
-            history.addLast(new ChatTurn(userMessage, assistantAnswer));
-            while (history.size() > MAX_HISTORY_TURNS) {
-                history.removeFirst();
-            }
+    private String unavailableMessage(RuntimeException exception, String language) {
+        String baseMessage = isUkrainian(language)
+                ? "ШІ помічник наразі недоступний. Ви все одно можете шукати рейси та купувати квитки за допомогою інтерфейсу системи."
+                : "AI assistant is unavailable. You can still search trips and buy tickets through the system UI.";
+        if (exception == null) {
+            return baseMessage;
         }
+        return "%s Details: %s.".formatted(baseMessage, errorSanitizer.sanitize(exception));
     }
 
-    private String configurationMissingMessage(String message) {
-        if (looksUkrainian(message)) {
-            return "ШІ асистент не налаштований: на бекенді відсутній GOOGLE_AI_API_KEY. Наразі можу допомогти через звичайний пошук рейсів, вибір місць і перегляд квитків у системі.";
-        }
-        return "AI assistant is not configured: GOOGLE_AI_API_KEY is missing on the backend. You can still use trip search, seat selection, and ticket pages in the system.";
-    }
-
-    private String temporaryFailureMessage(String userMessage, RuntimeException exception) {
-        String details = sanitizeError(exception);
-        if (looksUkrainian(userMessage)) {
-            return "Не вдалося отримати відповідь від Google AI API для моделі " + modelName
-                    + ". Деталі: " + details
-                    + ". Спробуйте пізніше або скористайтеся пошуком рейсів, вибором місць чи сторінкою квитків.";
-        }
-        return "Could not get a response from Google AI API for model " + modelName
-                + ". Details: " + details
-                + ". Try again later or use trip search, seat selection, or ticket pages.";
-    }
-
-    private String sanitizeError(RuntimeException exception) {
-        String message = exception.getMessage();
-        if (!StringUtils.hasText(message) && exception.getCause() != null) {
-            message = exception.getCause().getMessage();
-        }
-        if (!StringUtils.hasText(message)) {
-            message = exception.getClass().getSimpleName();
-        }
-        return message
-                .replaceAll("AIza[0-9A-Za-z_\\-]{20,}", "[redacted-api-key]")
-                .replaceAll("\\s+", " ")
-                .trim();
-    }
-
-    private boolean looksUkrainian(String message) {
-        return message != null && message.matches(".*[А-Яа-яЄєІіЇїҐґ].*");
-    }
-
-    private record ChatTurn(String userMessage, String assistantAnswer) {
+    private boolean isUkrainian(String language) {
+        String normalized = language == null ? "" : language.trim().toLowerCase();
+        return normalized.equals("ua") || normalized.equals("uk-ua") || normalized.startsWith("uk");
     }
 
     private interface ClientAiAssistant {

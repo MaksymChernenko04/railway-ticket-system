@@ -1,19 +1,27 @@
 package com.maksymchernenko.railwayticketsystem.service.client;
 
+import com.maksymchernenko.railwayticketsystem.dto.ai.context.CurrentTimeInfo;
+import com.maksymchernenko.railwayticketsystem.dto.ai.context.RouteContext;
+import com.maksymchernenko.railwayticketsystem.dto.ai.context.StationContext;
 import com.maksymchernenko.railwayticketsystem.model.booking.Order;
 import com.maksymchernenko.railwayticketsystem.model.booking.Ticket;
 import com.maksymchernenko.railwayticketsystem.model.railway.Route;
-import com.maksymchernenko.railwayticketsystem.model.railway.RouteStop;
 import com.maksymchernenko.railwayticketsystem.model.railway.Station;
+import com.maksymchernenko.railwayticketsystem.model.railway.Train;
 import com.maksymchernenko.railwayticketsystem.model.railway.Trip;
 import com.maksymchernenko.railwayticketsystem.model.railway.TripStop;
 import com.maksymchernenko.railwayticketsystem.model.vehicle.TripCar;
 import com.maksymchernenko.railwayticketsystem.repository.booking.TicketRepository;
 import com.maksymchernenko.railwayticketsystem.repository.railway.RouteRepository;
-import com.maksymchernenko.railwayticketsystem.repository.railway.RouteStopRepository;
 import com.maksymchernenko.railwayticketsystem.repository.railway.StationRepository;
+import com.maksymchernenko.railwayticketsystem.repository.railway.TrainRepository;
 import com.maksymchernenko.railwayticketsystem.repository.railway.TripRepository;
 import com.maksymchernenko.railwayticketsystem.repository.reference.BenefitRepository;
+import com.maksymchernenko.railwayticketsystem.repository.reference.CarTypeRepository;
+import com.maksymchernenko.railwayticketsystem.repository.reference.SeatTypeRepository;
+import com.maksymchernenko.railwayticketsystem.repository.reference.TrainTypeRepository;
+import com.maksymchernenko.railwayticketsystem.service.ai.context.AssistantCatalogService;
+import com.maksymchernenko.railwayticketsystem.service.ai.context.AssistantToolSupport;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +35,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -38,96 +47,96 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 @Component
 @RequiredArgsConstructor
 public class ClientAssistantTools {
 
     private static final int DEFAULT_LIMIT = 8;
-    private static final int MAX_TOOL_LIMIT = 40;
+    private static final int MAX_LIMIT = 40;
     private static final int MAX_TRANSFER_TRIPS = 120;
-    private static final Duration MIN_TRANSFER_WAIT = Duration.ofMinutes(30);
+    private static final Duration MIN_TRANSFER_WAIT = Duration.ofMinutes(25);
     private static final Duration MAX_TRANSFER_WAIT = Duration.ofHours(6);
+    private static final DateTimeFormatter PASSENGER_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final StationRepository stationRepository;
     private final RouteRepository routeRepository;
-    private final RouteStopRepository routeStopRepository;
     private final TripRepository tripRepository;
+    private final TrainRepository trainRepository;
     private final TicketRepository ticketRepository;
     private final BenefitRepository benefitRepository;
+    private final CarTypeRepository carTypeRepository;
+    private final SeatTypeRepository seatTypeRepository;
+    private final TrainTypeRepository trainTypeRepository;
+    private final AssistantCatalogService catalogService;
+    private final AssistantToolSupport support;
     private final TransactionTemplate transactionTemplate;
 
-    @Tool("Returns the current backend server time in UTC and in the application timezone. Use it before answering about nearest, today, tomorrow, or upcoming trips.")
+    @Tool("Returns current backend time in UTC and application timezone. Use for today, tomorrow, nearest, and upcoming trip questions.")
     public CurrentTimeInfo getCurrentSystemTime() {
-        Instant now = Instant.now();
-        ZoneId zoneId = ZoneId.systemDefault();
-        return new CurrentTimeInfo(now.toString(), zoneId.toString(), now.atZone(zoneId).toString());
+        return support.currentTime();
     }
 
-    @Tool("Finds passenger stations by city/station name, country code, or address. Use it when the client names a city or station.")
+    @Tool("Finds passenger stations by city/station name, country code, or address.")
     public List<StationContext> findStations(
-            @P("City, station name, country code, or address fragment from the client's message.") String query,
-            @P("Maximum number of stations to return.") Integer limit
+            @P("City, station name, country code, or address fragment.") String query,
+            @P("Maximum stations.") Integer limit
     ) {
-        return inTransaction(() -> searchStations(query).stream()
-                .limit(normalizeLimit(limit))
-                .map(this::toStationContext)
+        return inTx(() -> searchStations(query).stream()
+                .limit(limit(limit))
+                .map(this::stationContext)
                 .toList());
     }
 
-    @Tool("Finds routes by route number, route name, or station names and returns ordered stops. Use it to explain available directions or missing direct routes.")
+    @Tool("Finds passenger routes by number, route name, or station names and returns ordered stops.")
     public List<RouteContext> findRoutes(
-            @P("Route number, route name, station name, or route fragment from the client's request.") String query,
-            @P("Maximum number of routes to return.") Integer limit
+            @P("Route number, route name, station name, or station pair.") String query,
+            @P("Maximum routes.") Integer limit
     ) {
-        return inTransaction(() -> findRoutesForQuery(query).stream()
+        return inTx(() -> searchRoutes(query).stream()
                 .sorted(Comparator.comparing(Route::getNumber))
-                .limit(normalizeLimit(limit))
-                .map(this::toRouteContext)
+                .limit(limit(limit))
+                .map(catalogService::toRouteContext)
                 .toList());
     }
 
-    @Tool("Searches direct upcoming trips between two station/city names and returns practical ticket options with price and available seat count. Use this for trip, ticket, price, nearest, morning/evening/night, or cheapest direct-trip questions.")
-    public TripSearchContext searchDirectTrips(
-            @P("Origin city or station name, for example Kharkiv.") String origin,
-            @P("Destination city or station name, for example Kyiv.") String destination,
-            @P("Optional start date/time. Accepts ISO instant like 2026-06-20T00:00:00Z or local date like 2026-06-20. Use null for now.") String dateFrom,
-            @P("How many days to search from dateFrom. Use 1 for a specific date, 7-14 for nearest options.") Integer days,
-            @P("Maximum number of trip options to return.") Integer limit
+    @Tool("Returns route network with ordered stops for available directions.")
+    public List<RouteContext> getRouteNetwork(@P("Maximum routes.") Integer limit) {
+        return catalogService.getRouteNetwork(limit(limit));
+    }
+
+    @Tool("Searches direct upcoming passenger trips between two stations/cities with prices and available seats. Use this before transfers.")
+    public TripSearchResult searchDirectTrips(
+            @P("Origin city or station name.") String origin,
+            @P("Destination city or station name.") String destination,
+            @P("Optional ISO instant or local date yyyy-MM-dd. Null means now.") String dateFrom,
+            @P("How many days to search. Use 1 for an exact date, 7-14 for nearest options.") Integer days,
+            @P("Maximum trip options.") Integer limit
     ) {
-        return inTransaction(() -> {
-            ResolvedStations resolved = resolveStations(origin, destination);
-            if (resolved.hasProblem()) {
-                return TripSearchContext.withProblem(resolved.note(), resolved.originCandidates(), resolved.destinationCandidates());
+        return inTx(() -> {
+            StationPair pair = resolvePair(origin, destination);
+            if (pair.problem() != null) {
+                return TripSearchResult.problem(pair.problem(), pair.originCandidates(), pair.destinationCandidates());
             }
 
-            Station originStation = resolved.origin();
-            Station destinationStation = resolved.destination();
-            Instant from = parseDateStart(dateFrom, originStation, Instant.now());
-            Instant to = from.plus(Math.max(1, Math.min(days == null ? 14 : days, 30)), ChronoUnit.DAYS);
-
-            List<TripOption> options = tripRepository
-                    .findTripsContainingSegment(originStation.getId(), destinationStation.getId())
+            Instant from = parseDate(dateFrom, pair.origin(), Instant.now());
+            Instant to = from.plus(Math.clamp(days == null ? 14 : days, 1, 30), ChronoUnit.DAYS);
+            List<TripOption> options = tripRepository.findTripsContainingSegment(pair.origin().getId(), pair.destination().getId())
                     .stream()
-                    .map(trip -> toTripOption(trip, originStation, destinationStation))
+                    .map(trip -> tripOption(trip, pair.origin(), pair.destination()))
                     .flatMap(Optional::stream)
-                    .filter(option -> !option.departureAtUtc().isBefore(from))
-                    .filter(option -> option.departureAtUtc().isBefore(to))
-                    .sorted(Comparator.comparing(TripOption::departureAtUtc)
-                            .thenComparing(TripOption::basePrice))
-                    .limit(normalizeLimit(limit))
+                    .filter(option -> !option.departureAtUtc().isBefore(from) && option.departureAtUtc().isBefore(to))
+                    .sorted(Comparator.comparing(TripOption::departureAtUtc).thenComparing(TripOption::basePrice))
+                    .limit(limit(limit))
                     .toList();
 
-            String note = options.isEmpty()
-                    ? "No direct upcoming trips were found for the selected stations and period."
-                    : "Direct upcoming trips found. availableSeatCount is calculated for the requested segment.";
-
-            return new TripSearchContext(
-                    toStationContext(originStation),
-                    toStationContext(destinationStation),
+            return new TripSearchResult(
+                    stationContext(pair.origin()),
+                    stationContext(pair.destination()),
                     from.toString(),
                     to.toString(),
-                    note,
+                    options.isEmpty() ? "No direct trips found in this period." : "Direct trip options found.",
                     options,
                     List.of(),
                     List.of()
@@ -135,233 +144,200 @@ public class ClientAssistantTools {
         });
     }
 
-    @Tool("Finds one-transfer options between two station/city names when direct trips are missing or inconvenient. Use it for alternative route questions.")
-    public TransferSearchContext findTransferOptions(
+    @Tool("Finds one-transfer passenger trip options when direct trips are missing or inconvenient.")
+    public TransferSearchResult findTransferOptions(
             @P("Origin city or station name.") String origin,
             @P("Destination city or station name.") String destination,
-            @P("Optional start date/time. Accepts ISO instant or local date. Use null for now.") String dateFrom,
-            @P("How many days to search from dateFrom. Use 7-14 for alternatives.") Integer days,
-            @P("Maximum number of transfer options to return.") Integer limit
+            @P("Optional ISO instant or local date yyyy-MM-dd. Null means now.") String dateFrom,
+            @P("How many days to search.") Integer days,
+            @P("Maximum transfer options.") Integer limit
     ) {
-        return inTransaction(() -> {
-            ResolvedStations resolved = resolveStations(origin, destination);
-            if (resolved.hasProblem()) {
-                return TransferSearchContext.withProblem(resolved.note(), resolved.originCandidates(), resolved.destinationCandidates());
+        return inTx(() -> {
+            StationPair pair = resolvePair(origin, destination);
+            if (pair.problem() != null) {
+                return TransferSearchResult.problem(pair.problem(), pair.originCandidates(), pair.destinationCandidates());
             }
 
-            Station originStation = resolved.origin();
-            Station destinationStation = resolved.destination();
-            Instant from = parseDateStart(dateFrom, originStation, Instant.now());
-            Instant to = from.plus(Math.max(1, Math.min(days == null ? 14 : days, 30)), ChronoUnit.DAYS);
+            Instant from = parseDate(dateFrom, pair.origin(), Instant.now());
+            Instant to = from.plus(Math.clamp(days == null ? 14 : days, 1, 30), ChronoUnit.DAYS);
             List<Trip> trips = tripRepository.findTripsInPeriod(from, to.plus(MAX_TRANSFER_WAIT), null, PageRequest.of(0, MAX_TRANSFER_TRIPS));
             List<TransferOption> options = new ArrayList<>();
 
             for (Trip firstTrip : trips) {
-                TripStop originStop = findTripStopByStationId(firstTrip, originStation.getId());
+                TripStop originStop = stop(firstTrip, pair.origin().getId());
                 if (originStop == null) {
                     continue;
                 }
-
-                List<TripStop> possibleTransferStops = sortedStops(firstTrip).stream()
-                        .filter(stop -> originStop.getDepartureOffsetMinutes() < stop.getArrivalOffsetMinutes())
-                        .filter(stop -> !Objects.equals(stop.getRouteStop().getStation().getId(), destinationStation.getId()))
-                        .toList();
-
-                for (TripStop transferArrivalStop : possibleTransferStops) {
+                Instant firstDeparture = tripInstant(firstTrip, originStop.getDepartureOffsetMinutes());
+                if (firstDeparture.isBefore(from) || !firstDeparture.isBefore(to)) {
+                    continue;
+                }
+                for (TripStop transferArrivalStop : laterStops(firstTrip, originStop)) {
                     Station transferStation = transferArrivalStop.getRouteStop().getStation();
-                    Instant firstArrival = firstTrip.getDepartureAtUtc().plus(transferArrivalStop.getArrivalOffsetMinutes(), ChronoUnit.MINUTES);
+                    if (Objects.equals(transferStation.getId(), pair.destination().getId())) {
+                        continue;
+                    }
+                    Instant transferArrival = tripInstant(firstTrip, transferArrivalStop.getArrivalOffsetMinutes());
 
                     for (Trip secondTrip : trips) {
                         if (Objects.equals(firstTrip.getId(), secondTrip.getId())) {
                             continue;
                         }
-
-                        TripStop transferDepartureStop = findTripStopByStationId(secondTrip, transferStation.getId());
-                        TripStop destinationStop = findTripStopByStationId(secondTrip, destinationStation.getId());
+                        TripStop transferDepartureStop = stop(secondTrip, transferStation.getId());
+                        TripStop destinationStop = stop(secondTrip, pair.destination().getId());
                         if (transferDepartureStop == null || destinationStop == null
                                 || transferDepartureStop.getDepartureOffsetMinutes() >= destinationStop.getArrivalOffsetMinutes()) {
                             continue;
                         }
 
-                        Instant secondDeparture = secondTrip.getDepartureAtUtc().plus(transferDepartureStop.getDepartureOffsetMinutes(), ChronoUnit.MINUTES);
-                        long waitMinutes = Duration.between(firstArrival, secondDeparture).toMinutes();
+                        Instant transferDeparture = tripInstant(secondTrip, transferDepartureStop.getDepartureOffsetMinutes());
+                        long waitMinutes = Duration.between(transferArrival, transferDeparture).toMinutes();
                         if (waitMinutes < MIN_TRANSFER_WAIT.toMinutes() || waitMinutes > MAX_TRANSFER_WAIT.toMinutes()) {
                             continue;
                         }
 
-                        toTripOption(firstTrip, originStation, transferStation)
-                                .flatMap(first -> toTripOption(secondTrip, transferStation, destinationStation)
-                                        .map(second -> new TransferOption(transferStation.getName(), waitMinutes, first, second)))
-                                .ifPresent(options::add);
+                        Optional<TripOption> first = tripOption(firstTrip, pair.origin(), transferStation);
+                        Optional<TripOption> second = tripOption(secondTrip, transferStation, pair.destination());
+                        if (first.isPresent() && second.isPresent()) {
+                            options.add(new TransferOption(transferStation.getName(), waitMinutes, first.get(), second.get()));
+                        }
                     }
                 }
             }
 
-            List<TransferOption> limitedOptions = options.stream()
+            List<TransferOption> limited = options.stream()
                     .sorted(Comparator.comparing(option -> option.firstTrip().departureAtUtc()))
-                    .limit(normalizeLimit(limit))
+                    .limit(limit(limit))
                     .toList();
-            String note = limitedOptions.isEmpty()
-                    ? "No one-transfer options were found in the selected period."
-                    : "One-transfer options found. Compare total duration, wait time, price, and available seats.";
-
-            return new TransferSearchContext(
-                    toStationContext(originStation),
-                    toStationContext(destinationStation),
+            return new TransferSearchResult(
+                    stationContext(pair.origin()),
+                    stationContext(pair.destination()),
                     from.toString(),
                     to.toString(),
-                    note,
-                    limitedOptions,
+                    limited.isEmpty() ? "No one-transfer options found in this period." : "One-transfer options found.",
+                    limited,
                     List.of(),
                     List.of()
             );
         });
     }
 
-    @Tool("Returns configured passenger benefits and discount percentages. Use it for questions about discounts, benefits, student or privileged tickets.")
-    public List<BenefitContext> getAvailableBenefits() {
-        return inTransaction(() -> benefitRepository.findAll()
+    @Tool("Returns passenger-safe reference data: discounts, train types, car types, seat types, and trains.")
+    public PassengerReferenceData getPassengerReferenceData(@P("Maximum trains to return.") Integer limit) {
+        return inTx(() -> new PassengerReferenceData(
+                benefitRepository.findAll().stream()
+                        .sorted(Comparator.comparing(benefit -> benefit.getCode().toLowerCase()))
+                        .map(benefit -> new BenefitInfo(benefit.getCode(), benefit.getPercentAmount()))
+                        .toList(),
+                trainTypeRepository.findAll().stream()
+                        .sorted(Comparator.comparing(type -> type.getCode().toLowerCase()))
+                        .map(type -> new PricedTypeInfo(type.getCode(), type.getPriceMultiplier(), "Train type price multiplier. No separate description is configured."))
+                        .toList(),
+                carTypeRepository.findAll().stream()
+                        .sorted(Comparator.comparing(type -> type.getCode().toLowerCase()))
+                        .map(type -> new PricedTypeInfo(type.getCode(), type.getPriceMultiplier(), "Car type price multiplier. No separate description is configured."))
+                        .toList(),
+                seatTypeRepository.findAll().stream()
+                        .sorted(Comparator.comparing(type -> type.getCode().toLowerCase()))
+                        .map(type -> new PricedTypeInfo(type.getCode(), type.getPriceMultiplier(), "Seat type price multiplier. No separate description is configured."))
+                        .toList(),
+                trainRepository.findAll().stream()
+                        .sorted(Comparator.comparing(Train::getNumber))
+                        .limit(limit(limit))
+                        .map(train -> new TrainInfo(train.getId(), train.getNumber(), train.getName(), train.getType().getCode()))
+                        .toList()
+        ));
+    }
+
+    @Tool("Returns cars and seat counts for a passenger trip. Use after a trip was selected from searchDirectTrips.")
+    public List<TripCarInfo> getTripCarsAndSeats(@P("Trip id from searchDirectTrips.") Long tripId) {
+        if (tripId == null) {
+            return List.of();
+        }
+        return inTx(() -> tripRepository.findById(tripId)
                 .stream()
-                .sorted(Comparator.comparing(benefit -> benefit.getCode().toLowerCase()))
-                .map(benefit -> new BenefitContext(benefit.getCode(), benefit.getPercentAmount()))
+                .flatMap(trip -> trip.getTripCars().stream())
+                .sorted(Comparator.comparing(TripCar::getOrdinal))
+                .map(tripCar -> new TripCarInfo(
+                        tripCar.getOrdinal(),
+                        tripCar.getCar().getNumber(),
+                        tripCar.getCar().getType().getCode(),
+                        tripCar.getCar().getAccessible(),
+                        tripCar.getTripSeats() == null ? 0 : tripCar.getTripSeats().size()
+                ))
                 .toList());
     }
 
-    @Tool("Returns the route network with ordered station stops. Use it when the client asks what directions are available or why a direct trip cannot be bought.")
-    public List<RouteContext> getRouteNetwork(
-            @P("Maximum number of routes to return.") Integer limit
-    ) {
-        return inTransaction(() -> routeRepository.findAll()
-                .stream()
-                .sorted(Comparator.comparing(Route::getNumber))
-                .limit(normalizeLimit(limit))
-                .map(this::toRouteContext)
-                .toList());
-    }
-
-    public String getCatalogPromptText() {
-        return inTransaction(() -> {
-            String stations = stationRepository.findAll().stream()
-                    .sorted(Comparator.comparing(Station::getName))
-                    .map(station -> "%s [%s]".formatted(station.getName(), station.getCountry().getCode()))
-                    .reduce((first, second) -> first + "; " + second)
-                    .orElse("No stations configured.");
-
-            String routes = routeRepository.findAll().stream()
-                    .sorted(Comparator.comparing(Route::getNumber))
-                    .map(route -> "routeId=%s, number=%s, name=%s, stops=%s".formatted(
-                            route.getId(),
-                            route.getNumber(),
-                            route.getName(),
-                            routeStopsText(route.getId())
-                    ))
-                    .reduce((first, second) -> first + "\n" + second)
-                    .orElse("No routes configured.");
-
-            return """
-                    Available stations from the database:
-                    %s
-
-                    Available route network from the database:
-                    %s
-                    """.formatted(stations, routes);
-        });
-    }
-
-    private ResolvedStations resolveStations(String origin, String destination) {
-        List<Station> originCandidates = searchStations(origin);
-        List<Station> destinationCandidates = searchStations(destination);
-
-        if (originCandidates.isEmpty() || destinationCandidates.isEmpty()) {
-            return ResolvedStations.problem(
-                    "Could not resolve one or both stations from the client's message.",
-                    originCandidates.stream().map(this::toStationContext).toList(),
-                    destinationCandidates.stream().map(this::toStationContext).toList()
+    private StationPair resolvePair(String origin, String destination) {
+        List<Station> origins = searchStations(origin);
+        List<Station> destinations = searchStations(destination);
+        if (origins.isEmpty() || destinations.isEmpty()) {
+            return StationPair.problem(
+                    "Could not resolve origin or destination station.",
+                    origins.stream().map(this::stationContext).toList(),
+                    destinations.stream().map(this::stationContext).toList()
             );
         }
-
-        Station originStation = bestStationMatch(origin, originCandidates);
-        Station destinationStation = bestStationMatch(destination, destinationCandidates);
-        if (Objects.equals(originStation.getId(), destinationStation.getId())) {
-            return ResolvedStations.problem(
-                    "Origin and destination resolve to the same station.",
-                    originCandidates.stream().map(this::toStationContext).toList(),
-                    destinationCandidates.stream().map(this::toStationContext).toList()
+        Station start = origins.getFirst();
+        Station end = destinations.getFirst();
+        if (Objects.equals(start.getId(), end.getId())) {
+            return StationPair.problem(
+                    "Origin and destination are the same station.",
+                    origins.stream().map(this::stationContext).toList(),
+                    destinations.stream().map(this::stationContext).toList()
             );
         }
-
-        return ResolvedStations.ok(originStation, destinationStation);
+        return StationPair.ok(start, end);
     }
 
     private List<Station> searchStations(String query) {
-        String normalizedQuery = query == null ? "" : query.trim();
-        if (normalizedQuery.isBlank()) {
+        if (!StringUtils.hasText(query)) {
             return stationRepository.findAll().stream()
                     .sorted(Comparator.comparing(Station::getName))
                     .toList();
         }
 
-        Map<Long, Station> stationsById = new LinkedHashMap<>();
-        stationRepository.searchForAssistant(normalizedQuery)
-                .forEach(station -> stationsById.put(station.getId(), station));
-
-        for (String part : normalizedQuery.split("\\s+|,|\\-|\\u2014")) {
-            String term = part.trim();
-            if (term.length() >= 2) {
-                stationRepository.searchForAssistant(term)
-                        .forEach(station -> stationsById.put(station.getId(), station));
-            }
-        }
-
-        return List.copyOf(stationsById.values());
+        Map<Long, Station> stations = new LinkedHashMap<>();
+        String normalized = query.trim();
+        stationRepository.searchForAssistant(normalized).forEach(station -> stations.put(station.getId(), station));
+        tokens(normalized).forEach(token -> stationRepository.searchForAssistant(token).forEach(station -> stations.put(station.getId(), station)));
+        return List.copyOf(stations.values());
     }
 
-    private Station bestStationMatch(String query, List<Station> candidates) {
-        String normalizedQuery = query == null ? "" : query.trim();
-        return candidates.stream()
-                .filter(station -> station.getName().equalsIgnoreCase(normalizedQuery))
-                .findFirst()
-                .orElse(candidates.getFirst());
-    }
-
-    private List<Route> findRoutesForQuery(String query) {
-        String normalizedQuery = query == null ? "" : query.trim();
-        if (normalizedQuery.isBlank()) {
+    private List<Route> searchRoutes(String query) {
+        if (!StringUtils.hasText(query)) {
             return routeRepository.findAll();
         }
 
-        Map<Long, Route> routesById = new LinkedHashMap<>();
-        routeRepository.findByNumberIgnoreCase(normalizedQuery)
-                .ifPresent(route -> routesById.put(route.getId(), route));
-        routeRepository.searchForAdminAssistant(normalizedQuery)
-                .forEach(route -> routesById.put(route.getId(), route));
-
-        for (String part : normalizedQuery.split("\\s+|,|\\-|\\u2014")) {
-            String term = part.trim();
-            if (term.length() >= 2) {
-                routeRepository.searchForAdminAssistant(term)
-                        .forEach(route -> routesById.put(route.getId(), route));
-            }
-        }
-
-        return List.copyOf(routesById.values());
+        Map<Long, Route> routes = new LinkedHashMap<>();
+        String normalized = query.trim();
+        routeRepository.findByNumberIgnoreCase(normalized).ifPresent(route -> routes.put(route.getId(), route));
+        routeRepository.searchForAdminAssistant(normalized).forEach(route -> routes.put(route.getId(), route));
+        tokens(normalized).forEach(token -> routeRepository.searchForAdminAssistant(token).forEach(route -> routes.put(route.getId(), route)));
+        return List.copyOf(routes.values());
     }
 
-    private Optional<TripOption> toTripOption(Trip trip, Station originStation, Station destinationStation) {
-        TripStop originStop = findTripStopByStationId(trip, originStation.getId());
-        TripStop destinationStop = findTripStopByStationId(trip, destinationStation.getId());
+    private Stream<String> tokens(String text) {
+        return Stream.of(text.split("\\s+|,|-|\\u2013|\\u2014"))
+                .map(String::trim)
+                .filter(token -> token.length() >= 2);
+    }
+
+    private Optional<TripOption> tripOption(Trip trip, Station origin, Station destination) {
+        TripStop originStop = stop(trip, origin.getId());
+        TripStop destinationStop = stop(trip, destination.getId());
         if (originStop == null || destinationStop == null
                 || originStop.getDepartureOffsetMinutes() >= destinationStop.getArrivalOffsetMinutes()) {
             return Optional.empty();
         }
 
-        Instant departureAt = trip.getDepartureAtUtc().plus(originStop.getDepartureOffsetMinutes(), ChronoUnit.MINUTES);
-        Instant arrivalAt = trip.getDepartureAtUtc().plus(destinationStop.getArrivalOffsetMinutes(), ChronoUnit.MINUTES);
-        if (!departureAt.isAfter(Instant.now())) {
+        Instant departure = tripInstant(trip, originStop.getDepartureOffsetMinutes());
+        Instant arrival = tripInstant(trip, destinationStop.getArrivalOffsetMinutes());
+        if (!departure.isAfter(Instant.now())) {
             return Optional.empty();
         }
 
-        SeatAvailability availability = getSeatAvailability(trip, originStop, destinationStop);
+        SeatAvailability availability = seatAvailability(trip, originStop, destinationStop);
         return Optional.of(new TripOption(
                 trip.getId(),
                 trip.getRoute().getId(),
@@ -369,12 +345,12 @@ public class ClientAssistantTools {
                 trip.getRoute().getName(),
                 trip.getTrain().getNumber(),
                 trip.getTrain().getName(),
-                originStop.getId(),
-                originStation.getName(),
-                departureAt,
-                destinationStop.getId(),
-                destinationStation.getName(),
-                arrivalAt,
+                origin.getName(),
+                departure,
+                passengerTime(departure, origin),
+                destination.getName(),
+                arrival,
+                passengerTime(arrival, destination),
                 trip.getRoute().getBasePrice(),
                 trip.getRoute().getCurrency().getCode(),
                 availability.totalSeatCount(),
@@ -382,13 +358,13 @@ public class ClientAssistantTools {
         ));
     }
 
-    private SeatAvailability getSeatAvailability(Trip trip, TripStop originStop, TripStop destinationStop) {
+    private SeatAvailability seatAvailability(Trip trip, TripStop originStop, TripStop destinationStop) {
         int totalSeats = trip.getTripCars().stream()
                 .map(TripCar::getTripSeats)
                 .filter(Objects::nonNull)
                 .mapToInt(List::size)
                 .sum();
-        Set<Integer> occupiedTripSeatIds = Set.copyOf(ticketRepository.findOccupiedTripSeatIdsForSegment(
+        Set<Long> occupied = Set.copyOf(ticketRepository.findOccupiedTripSeatIdsForSegment(
                 trip.getId(),
                 originStop.getDepartureOffsetMinutes(),
                 destinationStop.getArrivalOffsetMinutes(),
@@ -397,55 +373,47 @@ public class ClientAssistantTools {
                 Instant.now(),
                 Ticket.SEAT_BLOCKING_STATUSES
         ));
-
-        return new SeatAvailability(totalSeats, Math.max(0, totalSeats - occupiedTripSeatIds.size()));
+        return new SeatAvailability(totalSeats, Math.max(0, totalSeats - occupied.size()));
     }
 
-    private TripStop findTripStopByStationId(Trip trip, Long stationId) {
+    private List<TripStop> laterStops(Trip trip, TripStop originStop) {
         return trip.getTripStops().stream()
-                .filter(stop -> stop.getRouteStop().getStation().getId().equals(stationId))
+                .filter(stop -> stop.getArrivalOffsetMinutes() > originStop.getDepartureOffsetMinutes())
+                .sorted(Comparator.comparing(TripStop::getArrivalOffsetMinutes))
+                .toList();
+    }
+
+    private TripStop stop(Trip trip, Long stationId) {
+        return trip.getTripStops().stream()
+                .filter(stop -> Objects.equals(stop.getRouteStop().getStation().getId(), stationId))
                 .findFirst()
                 .orElse(null);
     }
 
-    private List<TripStop> sortedStops(Trip trip) {
-        return trip.getTripStops().stream()
-                .sorted(Comparator.comparing(stop -> stop.getRouteStop().getOrdinal()))
-                .toList();
+    private Instant tripInstant(Trip trip, Integer offsetMinutes) {
+        return trip.getDepartureAtUtc().plus(offsetMinutes, ChronoUnit.MINUTES);
     }
 
-    private RouteContext toRouteContext(Route route) {
-        List<RouteStopContext> stops = routeStopRepository.findByRouteId(route.getId())
-                .stream()
-                .sorted(Comparator.comparing(RouteStop::getOrdinal))
-                .map(stop -> new RouteStopContext(
-                        stop.getStation().getId(),
-                        stop.getStation().getName(),
-                        stop.getStation().getCountry().getCode(),
-                        stop.getStation().getTimezone(),
-                        stop.getOrdinal()
-                ))
-                .toList();
-
-        return new RouteContext(
-                route.getId(),
-                route.getNumber(),
-                route.getName(),
-                route.getBasePrice(),
-                route.getCurrency().getCode(),
-                stops
-        );
+    private String passengerTime(Instant instant, Station station) {
+        return instant.atZone(ZoneId.systemDefault()).format(PASSENGER_TIME_FORMAT);
     }
 
-    private String routeStopsText(Long routeId) {
-        return routeStopRepository.findByRouteId(routeId).stream()
-                .sorted(Comparator.comparing(RouteStop::getOrdinal))
-                .map(stop -> stop.getStation().getName())
-                .reduce((first, second) -> first + " -> " + second)
-                .orElse("no stops");
+    private Instant parseDate(String value, Station station, Instant fallback) {
+        if (!StringUtils.hasText(value)) {
+            return fallback;
+        }
+        try {
+            return Instant.parse(value.trim());
+        } catch (DateTimeParseException ignored) {
+            try {
+                return LocalDate.parse(value.trim()).atStartOfDay(ZoneId.of(station.getTimezone())).toInstant();
+            } catch (DateTimeParseException ignoredAgain) {
+                return fallback;
+            }
+        }
     }
 
-    private StationContext toStationContext(Station station) {
+    private StationContext stationContext(Station station) {
         return new StationContext(
                 station.getId(),
                 station.getName(),
@@ -455,94 +423,38 @@ public class ClientAssistantTools {
         );
     }
 
-    private Instant parseDateStart(String value, Station station, Instant fallback) {
-        if (!StringUtils.hasText(value)) {
-            return fallback;
-        }
-
-        try {
-            return Instant.parse(value);
-        } catch (DateTimeParseException ignored) {
-            try {
-                return LocalDate.parse(value.trim())
-                        .atStartOfDay(ZoneId.of(station.getTimezone()))
-                        .toInstant();
-            } catch (DateTimeParseException secondIgnored) {
-                return fallback;
-            }
-        }
+    private <T> T inTx(Supplier<T> action) {
+        return support.inTransaction(transactionTemplate, action);
     }
 
-    private int normalizeLimit(Integer limit) {
-        if (limit == null) {
-            return DEFAULT_LIMIT;
-        }
-        return Math.max(1, Math.min(limit, MAX_TOOL_LIMIT));
+    private int limit(Integer value) {
+        return support.limit(value, DEFAULT_LIMIT, MAX_LIMIT);
     }
 
-    private <T> T inTransaction(Supplier<T> action) {
-        return transactionTemplate.execute(status -> action.get());
+    private record StationPair(
+            Station origin,
+            Station destination,
+            String problem,
+            List<StationContext> originCandidates,
+            List<StationContext> destinationCandidates
+    ) {
+        private static StationPair ok(Station origin, Station destination) {
+            return new StationPair(origin, destination, null, List.of(), List.of());
+        }
+
+        private static StationPair problem(
+                String problem,
+                List<StationContext> originCandidates,
+                List<StationContext> destinationCandidates
+        ) {
+            return new StationPair(null, null, problem, originCandidates, destinationCandidates);
+        }
     }
 
     private record SeatAvailability(int totalSeatCount, int availableSeatCount) {
     }
 
-    private record ResolvedStations(
-            Station origin,
-            Station destination,
-            String note,
-            List<StationContext> originCandidates,
-            List<StationContext> destinationCandidates
-    ) {
-        private static ResolvedStations ok(Station origin, Station destination) {
-            return new ResolvedStations(origin, destination, null, List.of(), List.of());
-        }
-
-        private static ResolvedStations problem(
-                String note,
-                List<StationContext> originCandidates,
-                List<StationContext> destinationCandidates
-        ) {
-            return new ResolvedStations(null, null, note, originCandidates, destinationCandidates);
-        }
-
-        private boolean hasProblem() {
-            return note != null;
-        }
-    }
-
-    public record CurrentTimeInfo(String utcNow, String systemTimezone, String localNow) {
-    }
-
-    public record StationContext(
-            Long stationId,
-            String stationName,
-            String countryCode,
-            String timezone,
-            Boolean accessible
-    ) {
-    }
-
-    public record RouteContext(
-            Long routeId,
-            String routeNumber,
-            String routeName,
-            BigDecimal basePrice,
-            String currencyCode,
-            List<RouteStopContext> stops
-    ) {
-    }
-
-    public record RouteStopContext(
-            Long stationId,
-            String stationName,
-            String countryCode,
-            String timezone,
-            Integer ordinal
-    ) {
-    }
-
-    public record TripSearchContext(
+    public record TripSearchResult(
             StationContext origin,
             StationContext destination,
             String dateFromUtc,
@@ -552,16 +464,16 @@ public class ClientAssistantTools {
             List<StationContext> originCandidates,
             List<StationContext> destinationCandidates
     ) {
-        private static TripSearchContext withProblem(
+        private static TripSearchResult problem(
                 String note,
                 List<StationContext> originCandidates,
                 List<StationContext> destinationCandidates
         ) {
-            return new TripSearchContext(null, null, null, null, note, List.of(), originCandidates, destinationCandidates);
+            return new TripSearchResult(null, null, null, null, note, List.of(), originCandidates, destinationCandidates);
         }
     }
 
-    public record TransferSearchContext(
+    public record TransferSearchResult(
             StationContext origin,
             StationContext destination,
             String dateFromUtc,
@@ -571,12 +483,12 @@ public class ClientAssistantTools {
             List<StationContext> originCandidates,
             List<StationContext> destinationCandidates
     ) {
-        private static TransferSearchContext withProblem(
+        private static TransferSearchResult problem(
                 String note,
                 List<StationContext> originCandidates,
                 List<StationContext> destinationCandidates
         ) {
-            return new TransferSearchContext(null, null, null, null, note, List.of(), originCandidates, destinationCandidates);
+            return new TransferSearchResult(null, null, null, null, note, List.of(), originCandidates, destinationCandidates);
         }
     }
 
@@ -587,12 +499,12 @@ public class ClientAssistantTools {
             String routeName,
             String trainNumber,
             String trainName,
-            Long departureTripStopId,
-            String departureStationName,
+            String originStationName,
             Instant departureAtUtc,
-            Long arrivalTripStopId,
-            String arrivalStationName,
+            String departureAtLocal,
+            String destinationStationName,
             Instant arrivalAtUtc,
+            String arrivalAtLocal,
             BigDecimal basePrice,
             String currencyCode,
             int totalSeatCount,
@@ -600,17 +512,27 @@ public class ClientAssistantTools {
     ) {
     }
 
-    public record TransferOption(
-            String transferStationName,
-            long waitMinutes,
-            TripOption firstTrip,
-            TripOption secondTrip
+    public record TransferOption(String transferStationName, long waitMinutes, TripOption firstTrip, TripOption secondTrip) {
+    }
+
+    public record PassengerReferenceData(
+            List<BenefitInfo> benefits,
+            List<PricedTypeInfo> trainTypes,
+            List<PricedTypeInfo> carTypes,
+            List<PricedTypeInfo> seatTypes,
+            List<TrainInfo> trains
     ) {
     }
 
-    public record BenefitContext(
-            String code,
-            BigDecimal percentAmount
-    ) {
+    public record BenefitInfo(String code, BigDecimal percentAmount) {
+    }
+
+    public record PricedTypeInfo(String code, BigDecimal priceMultiplier, String description) {
+    }
+
+    public record TrainInfo(Long trainId, String number, String name, String typeCode) {
+    }
+
+    public record TripCarInfo(Integer ordinal, String carNumber, String typeCode, Boolean accessible, int seatCount) {
     }
 }

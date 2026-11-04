@@ -2,121 +2,131 @@ package com.maksymchernenko.railwayticketsystem.service.admin;
 
 import com.maksymchernenko.railwayticketsystem.dto.admin.analytics.AdminAssistantChatRequest;
 import com.maksymchernenko.railwayticketsystem.dto.admin.analytics.AdminAssistantChatResponse;
-import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
-import dev.langchain4j.service.AiServices;
+import com.maksymchernenko.railwayticketsystem.service.ai.AiAssistantFactory;
+import com.maksymchernenko.railwayticketsystem.service.ai.AiErrorSanitizer;
+import com.maksymchernenko.railwayticketsystem.service.ai.ChatHistoryService;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class AdminAssistantService {
 
-    private static final int MAX_HISTORY_TURNS = 6;
     private static final String SYSTEM_PROMPT = """
-            You are an AI assistant for a railway ticket system administrator.
-            Use tools to get real system data before making operational recommendations.
-            For questions about the currently selected admin UI filters, current table values, selected period, route profitability, popular segments, demand, occupancy, or sales trend, call getSelectedAnalyticsOverview first and use its numbers as authoritative.
-            Use getAnalyticsOverview only when the administrator explicitly asks for a different period or route than the current UI filters.
-            Answer in the same language as the administrator's latest message. The latest manual admin message is more important for language choice than this system prompt or tool data.
-            Give short, evidence-based conclusions about route profitability, popular segments, trip occupancy, sales dynamics, upcoming operational issues, schedule/transfer problems, and practical admin actions.
-            The administrator may write a city pair instead of the full station or route name. Use the provided station and route catalog to choose the closest exact route or station names from the database before calling tools.
-            A route may be relevant even when the requested stations are not its endpoints, as long as both stations are present in the requested travel order.
-            You may recommend adding or reducing cars, launching an additional trip, reviewing departure time, keeping a profitable route as a priority, or investigating missing data.
-            Do not invent facts, revenue, routes, stations, dates, or occupancy. If tools do not provide enough context, clearly say that data is insufficient and suggest what available analysis can still help.
-            Do not request or reveal passenger personal data. Use only aggregated and operational data returned by tools.
-            Prefer concise bullet points when several actions are useful. Mention current time when answering about upcoming trips.
+            You are the administrator assistant for a railway ticket system.
+
+            Language:
+            - Determine the answer language only from the latest administrator message.
+            - Ignore the UI language and recent conversation language when choosing the answer language.
+            - Keep route numbers, station names, train numbers, dates, currencies, and numeric values exactly as tools return them.
+            - Before calling station, route, transfer, connection-window, or analytics tools with station names, normalize names from any user language into the official local spelling used by the railway station in its country.
+            - Handle inflected city names, missing diacritics, transliteration, and common city-only names before assuming that a station or route is missing.
+
+            Scope:
+            - You may use tools to inspect railway records, route network, selected analytics, explicitly requested analytics, trip load, transfer corridors, connection windows, and service-improvement context.
+            - For factual data or recommendations, call tools first. Do not invent routes, demand, revenue, prices, dates, occupancy, or timetable facts.
+            - You may give operational recommendations only after tools provide context.
+
+            Recommendation rules:
+            - Low passenger flow or low occupancy can justify fewer cars, discounts, timetable changes, or merging weak service.
+            - High passenger flow or high occupancy can justify more cars, extra trips, price review, or earlier sales prompts.
+            - Popular A-B and B-C corridors can justify a direct A-C route or a better B connection window only when direct A-C demand is weak or absent.
+            - For transfer-corridor answers, do not expose internal field names, formulas, or code-like terms such as planningDemandScore, firstLegTickets, secondLegTickets, directDemandTickets, waitMinutes, tripId, or min(...).
+            - Explain transfer-corridor evidence in plain language: sales are strong on both connected parts, direct A-C demand is weak or absent, and there is an upcoming timetable connection at the transfer station.
+            - Do not collapse transfer-corridor answers into "direct routes already exist". Always list concrete A-B-C corridors and use the actionIdeas returned by the tool.
+            - Transfer-corridor tool results are already deduplicated by target A-C direction and suppress candidates where A-C is already strongly demanded. Do not create extra permutations with the same stations in another order.
+            - If directRouteAlreadyExists is true, suggest an extra direct trip/time slot, capacity/pricing review, marketing of the direct option, and B-C timetable tuning. If false, suggest adding a direct A-C route.
+            - For transfer-corridor wait times, always show the exact connection times from connection.firstArrivalAtTransferLocal and connection.secondDepartureAtTransferLocal. If you do not show those times, do not mention waitMinutes.
+            - Use sales trend data before claiming popularity is rising or falling.
+            - Separate facts from recommendations when confidence is limited.
+
+            Privacy:
+            - Do not reveal personal user data, passenger names, payment identifiers, or individual order details.
+            - Aggregate analytics and operational records are allowed for administrators.
+
+            Answer style:
+            - Be concise, concrete, and useful.
+            - Mention which period and filters were used when analytics matter.
+            - When showing timetable times, use fields ending with AtLocal. Do not convert or display fields ending with AtUtc unless the administrator explicitly asks for UTC.
+            - Do not print Java/JSON field names, formulas, or backticked technical identifiers in user-facing answers. Translate tool data into business language.
+            - Prefer short bullet points. Avoid large tables unless the user explicitly asks for a table.
             """;
 
-    private final AdminAnalyticsTools adminAnalyticsTools;
-    private final Map<String, Deque<ChatTurn>> conversationHistory = new ConcurrentHashMap<>();
+    private final AdminAnalyticsTools tools;
+    private final AiAssistantFactory assistantFactory;
+    private final ChatHistoryService chatHistoryService;
+    private final AiErrorSanitizer errorSanitizer;
 
-    @Value("${app.ai.google-api-key:}")
-    private String googleApiKey;
-
-    @Value("${app.ai.model:gemini-2.5-flash-lite}")
-    private String modelName;
-
-    private volatile AdminAiAssistant assistant;
-    private volatile String assistantModelName;
+    @Value("${app.ai.admin-chat.max-output-tokens:2200}")
+    private int maxOutputTokens;
 
     public AdminAssistantChatResponse chat(AdminAssistantChatRequest request) {
         String conversationId = StringUtils.hasText(request.conversationId())
                 ? request.conversationId()
                 : UUID.randomUUID().toString();
+        AdminAnalyticsTools.SelectedAnalyticsFilters filters = new AdminAnalyticsTools.SelectedAnalyticsFilters(
+                request.dateFrom(),
+                request.dateTo(),
+                request.routeId(),
+                request.limit()
+        );
+        String answer = tools.withSelectedAnalyticsFilters(filters, () -> askModel(prompt(request, conversationId)));
 
-        if (!StringUtils.hasText(googleApiKey)) {
-            return new AdminAssistantChatResponse(conversationId, configurationMissingMessage());
-        }
-
-        String prompt = buildPrompt(request, conversationId);
-        String answer;
-        try {
-            answer = adminAnalyticsTools.withSelectedAnalyticsFilters(
-                    new AdminAnalyticsTools.SelectedAnalyticsFilters(
-                            request.dateFrom(),
-                            request.dateTo(),
-                            request.routeId(),
-                            request.limit()
-                    ),
-                    () -> getAssistant().chat(prompt)
-            );
-        } catch (RuntimeException exception) {
-            log.warn("Admin AI assistant request failed. model={}", modelName, exception);
-            answer = temporaryFailureMessage(exception);
-        }
-
-        remember(conversationId, request.message(), answer);
+        answer = normalize(answer);
+        chatHistoryService.remember(conversationId, request.message(), answer);
         return new AdminAssistantChatResponse(conversationId, answer);
     }
 
-    private AdminAiAssistant getAssistant() {
-        AdminAiAssistant localAssistant = assistant;
-        if (localAssistant != null && modelName.equals(assistantModelName)) {
-            return localAssistant;
+    private String askModel(String prompt) {
+        if (!assistantFactory.isGoogleConfigured()) {
+            return unavailableMessage(null);
         }
 
-        synchronized (this) {
-            if (assistant == null || !modelName.equals(assistantModelName)) {
-                var chatModel = GoogleAiGeminiChatModel.builder()
-                        .apiKey(googleApiKey)
-                        .modelName(modelName)
-                        .temperature(0.2)
-                        .build();
-
-                assistant = AiServices.builder(AdminAiAssistant.class)
-                        .chatModel(chatModel)
-                        .tools(adminAnalyticsTools)
-                        .build();
-                assistantModelName = modelName;
-            }
-            return assistant;
+        try {
+            return assistantFactory.googleAssistant(AdminAiAssistant.class, tools, 0.25, maxOutputTokens)
+                    .chat(prompt);
+        } catch (RuntimeException exception) {
+            return unavailableMessage(exception);
         }
     }
 
-    private String buildPrompt(AdminAssistantChatRequest request, String conversationId) {
+    private String prompt(AdminAssistantChatRequest request, String conversationId) {
         return """
-                Admin-selected analysis filters:
+                Current backend time UTC: %s
+                UI language setting: %s
+                Important: UI language is context only. Do not use it to choose the answer language.
+
+                Answer language:
+                - Use the language of the latest administrator message below.
+                - Do not copy the language of recent conversation if the latest message uses another language.
+
+                Selected analytics filters from the UI:
                 - dateFrom: %s
                 - dateTo: %s
                 - routeId: %s
-                - preferredLimit: %s
-                - currentBackendTimeUtc: %s
+                - limit: %s
 
-                Station and route catalog:
-                %s
+                Tool guidance:
+                - Use getSystemRecordSummary for general questions about how many railway records are configured.
+                - Use getSelectedAnalyticsOverview for questions about the currently visible analytics tables.
+                - Use getAnalyticsOverview when the administrator asks for another explicit period or route.
+                - Use getServiceImprovementContext for recommendations about improving service.
+                - Use getTransferDemandContext for A-B plus B-C demand, direct-route ideas, or transfer-corridor questions. For this answer format: list only returned corridors, maximum 5. For each corridor, show the route as "A - B + B - C => A - C", describe demand in business words, show sales on the two parts only as aggregate context when useful, describe direct A-C demand as weak/absent or already meaningful, show route numbers and local connection times at B, then give 1 concrete action idea. Do not show internal score names, formulas, raw trip ids, or Java/JSON field names. If few or no corridors are returned, say in plain language that many candidates were filtered out because direct demand was already strong or no realistic upcoming connection was found.
+                - Use getUpcomingTripLoad for adding/removing cars, extra trips, or occupancy questions.
+                - Use getConnectionWindows when the administrator asks whether transfers are convenient.
+                - In trip-load, transfer-corridor, and connection-window results, show local display times from fields ending with AtLocal. Ignore fields ending with AtUtc for user-facing time text unless UTC is explicitly requested.
+                - Use findRoutes or getRouteNetwork for route and station context.
+                - Do not rely on the administrator-provided station spelling as the only query. If a station/city name may be written in a different language, first convert it to the local official city/station spelling for the country where that station is located.
+                - If a station, route, transfer, or connection-window tool cannot resolve a station name, retry with localized alternatives: main station name, local city name, common transliteration, and spelling with/without diacritics when relevant.
+                - When the administrator writes only a city name, search for the main passenger station for that city in its local naming convention.
+                - Do not answer that a station, route, or corridor is missing until localized and transliterated search attempts also fail.
 
                 Recent conversation:
                 %s
@@ -124,66 +134,26 @@ public class AdminAssistantService {
                 Latest administrator message:
                 %s
                 """.formatted(
+                Instant.now(),
+                StringUtils.hasText(request.language()) ? request.language().trim() : "not specified",
                 request.dateFrom(),
                 request.dateTo(),
                 request.routeId() == null ? "all routes" : request.routeId(),
-                request.limit() == null ? 10 : request.limit(),
-                Instant.now(),
-                adminAnalyticsTools.getCatalogPromptText(),
-                historyText(conversationId),
+                request.limit(),
+                chatHistoryService.format(conversationId, "Administrator"),
                 request.message()
         );
     }
 
-    private String historyText(String conversationId) {
-        Deque<ChatTurn> history = conversationHistory.get(conversationId);
-        if (history == null || history.isEmpty()) {
-            return "No previous messages.";
-        }
-
-        StringBuilder builder = new StringBuilder();
-        for (ChatTurn turn : history) {
-            builder.append("Admin: ").append(turn.userMessage()).append('\n');
-            builder.append("Assistant: ").append(turn.assistantAnswer()).append('\n');
-        }
-        return builder.toString();
+    private String normalize(String answer) {
+        return StringUtils.hasText(answer) ? answer.trim() : "AI assistant is unavailable. Analytics tables remain available.";
     }
 
-    private void remember(String conversationId, String userMessage, String assistantAnswer) {
-        Deque<ChatTurn> history = conversationHistory.computeIfAbsent(conversationId, ignored -> new ArrayDeque<>());
-        synchronized (history) {
-            history.addLast(new ChatTurn(userMessage, assistantAnswer));
-            while (history.size() > MAX_HISTORY_TURNS) {
-                history.removeFirst();
-            }
+    private String unavailableMessage(RuntimeException exception) {
+        if (exception == null) {
+            return "AI assistant is unavailable because Google AI is not configured. Analytics tables remain available.";
         }
-    }
-
-    private String configurationMissingMessage() {
-        return "AI assistant is not configured: GOOGLE_AI_API_KEY is missing on the backend.";
-    }
-
-    private String temporaryFailureMessage(RuntimeException exception) {
-        return "Could not get a response from Google AI API for model " + modelName
-                + ". Details: " + sanitizeError(exception)
-                + ". Check model access for your API key, quota/rate limits, and backend logs.";
-    }
-
-    private String sanitizeError(RuntimeException exception) {
-        String message = exception.getMessage();
-        if (!StringUtils.hasText(message) && exception.getCause() != null) {
-            message = exception.getCause().getMessage();
-        }
-        if (!StringUtils.hasText(message)) {
-            message = exception.getClass().getSimpleName();
-        }
-        return message
-                .replaceAll("AIza[0-9A-Za-z_\\-]{20,}", "[redacted-api-key]")
-                .replaceAll("\\s+", " ")
-                .trim();
-    }
-
-    private record ChatTurn(String userMessage, String assistantAnswer) {
+        return "AI assistant is unavailable. Details: %s.".formatted(errorSanitizer.sanitize(exception));
     }
 
     private interface AdminAiAssistant {

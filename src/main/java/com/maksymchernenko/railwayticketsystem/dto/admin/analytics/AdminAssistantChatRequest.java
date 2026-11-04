@@ -10,6 +10,7 @@ import java.time.Instant;
 
 public record AdminAssistantChatRequest(
         String conversationId,
+        String language,
         @NotNull Instant dateFrom,
         @NotNull Instant dateTo,
         Long routeId,

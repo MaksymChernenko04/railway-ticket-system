@@ -11,13 +11,12 @@ import com.maksymchernenko.railwayticketsystem.model.booking.Order;
 import com.maksymchernenko.railwayticketsystem.model.booking.Ticket;
 import com.maksymchernenko.railwayticketsystem.repository.booking.TicketRepository;
 import com.maksymchernenko.railwayticketsystem.repository.railway.TripRepository;
+import com.maksymchernenko.railwayticketsystem.service.common.AnalyticsMath;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
 
@@ -31,49 +30,55 @@ public class AdminAnalyticsService {
 
     private final TicketRepository ticketRepository;
     private final TripRepository tripRepository;
+    private final AnalyticsMath analyticsMath;
 
     @Transactional(readOnly = true)
     public AdminAnalyticsResponse getAnalytics(AdminAnalyticsRequest request) {
-        validatePeriod(request.dateFrom(), request.dateTo());
-        int limit = normalizeLimit(request.limit());
+        AnalyticsFilter filter = toFilter(request);
 
         return new AdminAnalyticsResponse(
-                getSummary(request.dateFrom(), request.dateTo(), request.routeId()),
-                getRevenueByRoute(request.dateFrom(), request.dateTo(), request.routeId(), limit),
-                getDemandByRoute(request.dateFrom(), request.dateTo(), request.routeId(), limit),
-                getPopularSegments(request.dateFrom(), request.dateTo(), request.routeId(), limit),
-                getHighestOccupancyTrips(request.dateFrom(), request.dateTo(), request.routeId(), limit),
-                getLowestOccupancyTrips(request.dateFrom(), request.dateTo(), request.routeId(), limit),
-                getSalesTrend(request.dateFrom(), request.dateTo(), request.routeId())
+                getSummary(filter),
+                getRevenueByRoute(filter),
+                getDemandByRoute(filter),
+                getPopularSegments(filter),
+                getHighestOccupancyTrips(filter),
+                getLowestOccupancyTrips(filter),
+                getSalesTrend(filter)
         );
     }
 
     @Transactional(readOnly = true)
     public List<SummaryKpiResponse> getSummary(Instant dateFrom, Instant dateTo, Long routeId) {
-        validatePeriod(dateFrom, dateTo);
-        return ticketRepository.findSummary(dateFrom, dateTo, routeId, Order.Status.PAID, SOLD_TICKET_STATUSES)
+        return getSummary(toFilter(dateFrom, dateTo, routeId, DEFAULT_LIMIT));
+    }
+
+    private List<SummaryKpiResponse> getSummary(AnalyticsFilter filter) {
+        return ticketRepository.findSummary(filter.dateFrom(), filter.dateTo(), filter.routeId(), Order.Status.PAID, SOLD_TICKET_STATUSES)
                 .stream()
                 .map(row -> new SummaryKpiResponse(
                         row.getCurrencyCode(),
-                        value(row.getSoldTicketCount()),
-                        money(row.getTotalRevenue()),
-                        average(row.getTotalRevenue(), row.getSoldTicketCount()),
-                        value(row.getPaidOrderCount()),
-                        value(row.getCustomerCount())
+                        analyticsMath.zeroIfNull(row.getSoldTicketCount()),
+                        analyticsMath.zeroIfNull(row.getTotalRevenue()),
+                        analyticsMath.average(row.getTotalRevenue(), row.getSoldTicketCount()),
+                        analyticsMath.zeroIfNull(row.getPaidOrderCount()),
+                        analyticsMath.zeroIfNull(row.getCustomerCount())
                 ))
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<RouteRevenueResponse> getRevenueByRoute(Instant dateFrom, Instant dateTo, Long routeId, Integer limit) {
-        validatePeriod(dateFrom, dateTo);
+        return getRevenueByRoute(toFilter(dateFrom, dateTo, routeId, limit));
+    }
+
+    private List<RouteRevenueResponse> getRevenueByRoute(AnalyticsFilter filter) {
         return ticketRepository.findRevenueByRoute(
-                        dateFrom,
-                        dateTo,
-                        routeId,
+                        filter.dateFrom(),
+                        filter.dateTo(),
+                        filter.routeId(),
                         Order.Status.PAID,
                         SOLD_TICKET_STATUSES,
-                        PageRequest.of(0, normalizeLimit(limit))
+                        filter.pageRequest()
                 )
                 .stream()
                 .map(this::toRouteRevenueResponse)
@@ -82,14 +87,17 @@ public class AdminAnalyticsService {
 
     @Transactional(readOnly = true)
     public List<RouteRevenueResponse> getDemandByRoute(Instant dateFrom, Instant dateTo, Long routeId, Integer limit) {
-        validatePeriod(dateFrom, dateTo);
+        return getDemandByRoute(toFilter(dateFrom, dateTo, routeId, limit));
+    }
+
+    private List<RouteRevenueResponse> getDemandByRoute(AnalyticsFilter filter) {
         return ticketRepository.findDemandByRoute(
-                        dateFrom,
-                        dateTo,
-                        routeId,
+                        filter.dateFrom(),
+                        filter.dateTo(),
+                        filter.routeId(),
                         Order.Status.PAID,
                         SOLD_TICKET_STATUSES,
-                        PageRequest.of(0, normalizeLimit(limit))
+                        filter.pageRequest()
                 )
                 .stream()
                 .map(this::toRouteRevenueResponse)
@@ -98,36 +106,42 @@ public class AdminAnalyticsService {
 
     @Transactional(readOnly = true)
     public List<PopularSegmentResponse> getPopularSegments(Instant dateFrom, Instant dateTo, Long routeId, Integer limit) {
-        validatePeriod(dateFrom, dateTo);
+        return getPopularSegments(toFilter(dateFrom, dateTo, routeId, limit));
+    }
+
+    private List<PopularSegmentResponse> getPopularSegments(AnalyticsFilter filter) {
         return ticketRepository.findPopularSegments(
-                        dateFrom,
-                        dateTo,
-                        routeId,
+                        filter.dateFrom(),
+                        filter.dateTo(),
+                        filter.routeId(),
                         Order.Status.PAID,
                         SOLD_TICKET_STATUSES,
-                        PageRequest.of(0, normalizeLimit(limit))
+                        filter.pageRequest()
                 )
                 .stream()
                 .map(row -> new PopularSegmentResponse(
                         row.getStartStationName(),
                         row.getEndStationName(),
                         row.getCurrencyCode(),
-                        value(row.getTicketCount()),
-                        money(row.getTotalRevenue())
+                        analyticsMath.zeroIfNull(row.getTicketCount()),
+                        analyticsMath.zeroIfNull(row.getTotalRevenue())
                 ))
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<TripOccupancyResponse> getHighestOccupancyTrips(Instant dateFrom, Instant dateTo, Long routeId, Integer limit) {
-        validatePeriod(dateFrom, dateTo);
+        return getHighestOccupancyTrips(toFilter(dateFrom, dateTo, routeId, limit));
+    }
+
+    private List<TripOccupancyResponse> getHighestOccupancyTrips(AnalyticsFilter filter) {
         return tripRepository.findHighestOccupancyTrips(
-                        dateFrom,
-                        dateTo,
-                        routeId,
+                        filter.dateFrom(),
+                        filter.dateTo(),
+                        filter.routeId(),
                         Order.Status.PAID,
                         SOLD_TICKET_STATUSES,
-                        PageRequest.of(0, normalizeLimit(limit))
+                        filter.pageRequest()
                 )
                 .stream()
                 .map(this::toTripOccupancyResponse)
@@ -136,14 +150,17 @@ public class AdminAnalyticsService {
 
     @Transactional(readOnly = true)
     public List<TripOccupancyResponse> getLowestOccupancyTrips(Instant dateFrom, Instant dateTo, Long routeId, Integer limit) {
-        validatePeriod(dateFrom, dateTo);
+        return getLowestOccupancyTrips(toFilter(dateFrom, dateTo, routeId, limit));
+    }
+
+    private List<TripOccupancyResponse> getLowestOccupancyTrips(AnalyticsFilter filter) {
         return tripRepository.findLowestOccupancyTrips(
-                        dateFrom,
-                        dateTo,
-                        routeId,
+                        filter.dateFrom(),
+                        filter.dateTo(),
+                        filter.routeId(),
                         Order.Status.PAID,
                         SOLD_TICKET_STATUSES,
-                        PageRequest.of(0, normalizeLimit(limit))
+                        filter.pageRequest()
                 )
                 .stream()
                 .map(this::toTripOccupancyResponse)
@@ -152,15 +169,18 @@ public class AdminAnalyticsService {
 
     @Transactional(readOnly = true)
     public List<SalesTrendResponse> getSalesTrend(Instant dateFrom, Instant dateTo, Long routeId) {
-        validatePeriod(dateFrom, dateTo);
-        return ticketRepository.findSalesTrend(dateFrom, dateTo, routeId, Order.Status.PAID, SOLD_TICKET_STATUSES)
+        return getSalesTrend(toFilter(dateFrom, dateTo, routeId, DEFAULT_LIMIT));
+    }
+
+    private List<SalesTrendResponse> getSalesTrend(AnalyticsFilter filter) {
+        return ticketRepository.findSalesTrend(filter.dateFrom(), filter.dateTo(), filter.routeId(), Order.Status.PAID, SOLD_TICKET_STATUSES)
                 .stream()
                 .map(row -> new SalesTrendResponse(
                         row.getSaleDate(),
                         row.getCurrencyCode(),
-                        value(row.getSoldTicketCount()),
-                        money(row.getTotalRevenue()),
-                        value(row.getPaidOrderCount())
+                        analyticsMath.zeroIfNull(row.getSoldTicketCount()),
+                        analyticsMath.zeroIfNull(row.getTotalRevenue()),
+                        analyticsMath.zeroIfNull(row.getPaidOrderCount())
                 ))
                 .toList();
     }
@@ -169,7 +189,7 @@ public class AdminAnalyticsService {
         if (limit == null) {
             return DEFAULT_LIMIT;
         }
-        return Math.max(1, Math.min(limit, MAX_LIMIT));
+        return Math.clamp(limit, 1, MAX_LIMIT);
     }
 
     private RouteRevenueResponse toRouteRevenueResponse(TicketRepository.RouteRevenueRow row) {
@@ -178,17 +198,17 @@ public class AdminAnalyticsService {
                 row.getRouteNumber(),
                 row.getRouteName(),
                 row.getCurrencyCode(),
-                value(row.getSoldTicketCount()),
-                money(row.getTotalRevenue()),
-                average(row.getTotalRevenue(), row.getSoldTicketCount()),
-                value(row.getPaidOrderCount()),
-                value(row.getCustomerCount())
+                analyticsMath.zeroIfNull(row.getSoldTicketCount()),
+                analyticsMath.zeroIfNull(row.getTotalRevenue()),
+                analyticsMath.average(row.getTotalRevenue(), row.getSoldTicketCount()),
+                analyticsMath.zeroIfNull(row.getPaidOrderCount()),
+                analyticsMath.zeroIfNull(row.getCustomerCount())
         );
     }
 
     private TripOccupancyResponse toTripOccupancyResponse(TripRepository.TripOccupancyRow row) {
-        long totalSeats = value(row.getTotalSeatCount());
-        long soldSeats = value(row.getSoldSeatCount());
+        long totalSeats = analyticsMath.zeroIfNull(row.getTotalSeatCount());
+        long soldSeats = analyticsMath.zeroIfNull(row.getSoldSeatCount());
 
         return new TripOccupancyResponse(
                 row.getTripId(),
@@ -196,42 +216,33 @@ public class AdminAnalyticsService {
                 row.getRouteNumber(),
                 row.getRouteName(),
                 row.getDepartureAtUtc(),
-                value(row.getCarCount()),
+                analyticsMath.zeroIfNull(row.getCarCount()),
                 totalSeats,
                 soldSeats,
-                occupancyPercent(soldSeats, totalSeats)
+                analyticsMath.percent(soldSeats, totalSeats)
         );
     }
 
-    private void validatePeriod(Instant dateFrom, Instant dateTo) {
+    private AnalyticsFilter toFilter(AdminAnalyticsRequest request) {
+        return toFilter(request.dateFrom(), request.dateTo(), request.routeId(), request.limit());
+    }
+
+    private AnalyticsFilter toFilter(Instant dateFrom, Instant dateTo, Long routeId, Integer limit) {
         if (dateFrom == null || dateTo == null || !dateFrom.isBefore(dateTo)) {
             throw new IllegalArgumentException("dateFrom must be earlier than dateTo");
         }
+        return new AnalyticsFilter(dateFrom, dateTo, routeId, normalizeLimit(limit));
     }
 
-    private long value(Long value) {
-        return value == null ? 0 : value;
-    }
+    private record AnalyticsFilter(
+            Instant dateFrom,
+            Instant dateTo,
+            Long routeId,
+            int limit
+    ) {
 
-    private BigDecimal money(BigDecimal value) {
-        return value == null ? BigDecimal.ZERO : value;
-    }
-
-    private BigDecimal average(BigDecimal totalRevenue, Long ticketCount) {
-        long count = value(ticketCount);
-        if (count == 0) {
-            return BigDecimal.ZERO;
+        private PageRequest pageRequest() {
+            return PageRequest.of(0, limit);
         }
-        return money(totalRevenue).divide(BigDecimal.valueOf(count), 2, RoundingMode.HALF_UP);
-    }
-
-    private double occupancyPercent(long soldSeats, long totalSeats) {
-        if (totalSeats == 0) {
-            return 0.0;
-        }
-        return BigDecimal.valueOf(soldSeats)
-                .multiply(BigDecimal.valueOf(100))
-                .divide(BigDecimal.valueOf(totalSeats), 2, RoundingMode.HALF_UP)
-                .doubleValue();
     }
 }
