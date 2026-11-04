@@ -21,6 +21,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
 function formatDateTime(value) {
   if (!value) {
@@ -56,10 +57,10 @@ function isActiveTicket(ticket, now) {
 }
 
 function statusColor(status) {
-  if (status === "ACTIVE") {
+  if (status === "ACTIVE" || status === "FINISHED") {
     return "success";
   }
-  if (status === "CANCELLED" || status === "RETURNED") {
+  if (status === "CANCELLED") {
     return "error";
   }
   return "default";
@@ -73,7 +74,7 @@ function compareByDepartureDesc(left, right) {
   return compareByDepartureAsc(right, left);
 }
 
-function TicketCard({ ticket }) {
+function TicketCard({ ticket, codeLabel, t }) {
   return (
     <Paper variant="outlined" sx={{ p: { xs: 2, md: 2.5 }, bgcolor: "rgba(255,255,255,0.86)" }}>
       <Stack spacing={2}>
@@ -99,7 +100,7 @@ function TicketCard({ ticket }) {
             </Box>
             <Box>
               <Typography variant="h6">
-                {ticket.trainNumber} - {ticket.trainName || "Train"}
+                {ticket.trainNumber} - {ticket.trainName || t("Train")}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {ticket.routeNumber} - {ticket.routeName}
@@ -107,8 +108,8 @@ function TicketCard({ ticket }) {
             </Box>
           </Stack>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            <Chip color={statusColor(ticket.status)} label={ticket.status} size="small" />
-            <Chip variant="outlined" label={`Ticket #${ticket.id}`} size="small" />
+            <Chip color={statusColor(ticket.status)} label={codeLabel("status", ticket.status)} size="small" />
+            <Chip variant="outlined" label={t("Ticket #{id}", { id: ticket.id })} size="small" />
           </Stack>
         </Stack>
 
@@ -122,17 +123,17 @@ function TicketCard({ ticket }) {
         >
           <Box>
             <Typography variant="caption" color="text.secondary">
-              Departure
+              {t("Departure")}
             </Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
               {ticket.startStationName}
             </Typography>
             <Typography variant="body2">{formatDateTime(ticket.departureAtUtc)}</Typography>
           </Box>
-          <Chip variant="outlined" label={`Car ${ticket.carOrdinal}, seat ${ticket.seatNumber}`} />
+          <Chip variant="outlined" label={`${t("Car")} ${ticket.carOrdinal}, ${t("Seat").toLowerCase()} ${ticket.seatNumber}`} />
           <Box sx={{ textAlign: { xs: "left", md: "right" } }}>
             <Typography variant="caption" color="text.secondary">
-              Arrival
+              {t("Arrival")}
             </Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
               {ticket.endStationName}
@@ -152,7 +153,7 @@ function TicketCard({ ticket }) {
         >
           <Box>
             <Typography variant="caption" color="text.secondary">
-              Passenger
+              {t("Passenger")}
             </Typography>
             <Typography variant="body1">
               {ticket.passengerFirstName} {ticket.passengerLastName}
@@ -160,13 +161,13 @@ function TicketCard({ ticket }) {
           </Box>
           <Box>
             <Typography variant="caption" color="text.secondary">
-              Seat type
+              {t("Seat type")}
             </Typography>
-            <Typography variant="body1">{ticket.seatTypeCode}</Typography>
+            <Typography variant="body1">{codeLabel("seatType", ticket.seatTypeCode)}</Typography>
           </Box>
           <Box>
             <Typography variant="caption" color="text.secondary">
-              Price
+              {t("Price")}
             </Typography>
             <Typography variant="body1" sx={{ fontWeight: 700 }}>
               {formatMoney(ticket.price, ticket.currencyCode)}
@@ -176,7 +177,10 @@ function TicketCard({ ticket }) {
 
         {ticket.appliedBenefitCode ? (
           <Alert severity="info" sx={{ py: 0.5 }}>
-            {ticket.appliedBenefitCode} benefit applied: {ticket.appliedBenefitPercent}% discount
+            {t("{code} benefit applied: {percent}% discount", {
+              code: codeLabel("benefit", ticket.appliedBenefitCode),
+              percent: ticket.appliedBenefitPercent,
+            })}
           </Alert>
         ) : null}
       </Stack>
@@ -186,6 +190,7 @@ function TicketCard({ ticket }) {
 
 export function MyTicketsPage() {
   const { authorizedGet, user } = useAuth();
+  const { codeLabel, t } = useI18n();
   const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [tab, setTab] = useState("active");
@@ -274,16 +279,16 @@ export function MyTicketsPage() {
                       color="primary.main"
                       sx={{ letterSpacing: "0.16em", fontWeight: 700 }}
                     >
-                      Tickets
+                      {t("Tickets")}
                     </Typography>
-                    <Typography variant="h4">My tickets</Typography>
+                    <Typography variant="h4">{t("My tickets")}</Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {user?.email ?? "Client"}
+                      {user?.email ?? t("Client")}
                     </Typography>
                   </Box>
                 </Stack>
                 <Button variant="contained" onClick={() => navigate("/trips/search")}>
-                  Search trips
+                  {t("Search trips")}
                 </Button>
               </Stack>
             </CardContent>
@@ -299,13 +304,13 @@ export function MyTicketsPage() {
                     icon={<EventAvailableIcon />}
                     iconPosition="start"
                     value="active"
-                    label={`Active (${activeTickets.length})`}
+                    label={`${t("Active")} (${activeTickets.length})`}
                   />
                   <Tab
                     icon={<HistoryIcon />}
                     iconPosition="start"
                     value="history"
-                    label={`History (${historyTickets.length})`}
+                    label={`${t("History")} (${historyTickets.length})`}
                   />
                 </Tabs>
 
@@ -313,7 +318,7 @@ export function MyTicketsPage() {
                   <Box sx={{ py: 8, display: "grid", placeItems: "center" }}>
                     <Stack spacing={2} alignItems="center">
                       <CircularProgress />
-                      <Typography color="text.secondary">Loading tickets...</Typography>
+                      <Typography color="text.secondary">{t("Loading tickets...")}</Typography>
                     </Stack>
                   </Box>
                 ) : null}
@@ -321,15 +326,15 @@ export function MyTicketsPage() {
                 {!isLoading && visibleTickets.length === 0 ? (
                   <Alert severity="info">
                     {tab === "active"
-                      ? "No active tickets yet. Paid upcoming trips will appear here."
-                      : "No ticket history yet."}
+                      ? t("No active tickets yet. Paid upcoming trips will appear here.")
+                      : t("No ticket history yet.")}
                   </Alert>
                 ) : null}
 
                 {!isLoading && visibleTickets.length > 0 ? (
                   <Stack spacing={2}>
                     {visibleTickets.map((ticket) => (
-                      <TicketCard key={ticket.id} ticket={ticket} />
+                      <TicketCard key={ticket.id} ticket={ticket} codeLabel={codeLabel} t={t} />
                     ))}
                   </Stack>
                 ) : null}

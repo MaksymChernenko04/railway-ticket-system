@@ -16,6 +16,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
 const emptyForm = {
   firstName: "",
@@ -33,6 +34,7 @@ export function PassengerManager({
   title = "Passengers",
   description = "Create passenger profiles and assign benefits when applicable.",
 }) {
+  const { codeLabel, t } = useI18n();
   const [form, setForm] = useState(emptyForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,10 +56,10 @@ export function PassengerManager({
   return (
     <Stack spacing={2}>
       <Box>
-        <Typography variant="h5">{title}</Typography>
+        <Typography variant="h5">{t(title)}</Typography>
         {description ? (
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-            {description}
+            {t(description)}
           </Typography>
         ) : null}
       </Box>
@@ -75,15 +77,18 @@ export function PassengerManager({
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     {passenger.benefitCode
-                      ? `${passenger.benefitCode} - ${passenger.benefitPercent}% discount`
-                      : "No benefit"}
+                      ? t("{code} - {percent}% discount", {
+                          code: codeLabel("benefit", passenger.benefitCode),
+                          percent: passenger.benefitPercent,
+                        })
+                      : t("No benefit")}
                   </Typography>
                 </Box>
                 <IconButton
                   color="error"
                   onClick={() => onDelete(passenger.id)}
                   disabled={isLoading || isSubmitting}
-                  aria-label={`Delete passenger ${passenger.firstName} ${passenger.lastName}`}
+                  aria-label={t("Delete")}
                 >
                   <DeleteOutlineIcon />
                 </IconButton>
@@ -93,38 +98,38 @@ export function PassengerManager({
         ))}
       </Stack>
 
-      {!passengers.length && !isLoading ? <Alert severity="info">No passengers yet.</Alert> : null}
+      {!passengers.length && !isLoading ? <Alert severity="info">{t("No passengers yet.")}</Alert> : null}
 
       <Box component="form" onSubmit={handleSubmit}>
         <Stack spacing={1.5}>
           <TextField
-            label="First name"
+            label={t("First name")}
             value={form.firstName}
             onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))}
             required
             fullWidth
           />
           <TextField
-            label="Last name"
+            label={t("Last name")}
             value={form.lastName}
             onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))}
             required
             fullWidth
           />
           <FormControl fullWidth disabled={!benefits.length}>
-            <InputLabel id="passenger-benefit-label">Benefit</InputLabel>
+            <InputLabel id="passenger-benefit-label">{t("Benefit")}</InputLabel>
             <Select
               labelId="passenger-benefit-label"
-              label="Benefit"
+              label={t("Benefit")}
               value={form.benefitCode}
               onChange={(event) => setForm((current) => ({ ...current, benefitCode: event.target.value }))}
             >
               <MenuItem value="">
-                No benefit
+                {t("No benefit")}
               </MenuItem>
               {benefits.map((benefit) => (
                 <MenuItem key={benefit.code} value={benefit.code}>
-                  {benefit.code} - {benefit.percentAmount}%
+                  {codeLabel("benefit", benefit.code)} - {benefit.percentAmount}%
                 </MenuItem>
               ))}
             </Select>
@@ -135,7 +140,7 @@ export function PassengerManager({
             startIcon={<PersonAddAlt1Icon />}
             disabled={isLoading || isSubmitting}
           >
-            {isSubmitting ? "Adding..." : "Add passenger"}
+            {isSubmitting ? t("Adding...") : t("Add passenger")}
           </Button>
         </Stack>
       </Box>

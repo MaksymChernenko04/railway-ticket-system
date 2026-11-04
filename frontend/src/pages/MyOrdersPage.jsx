@@ -22,6 +22,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
 function formatDateTime(value) {
   if (!value) {
@@ -62,7 +63,7 @@ function paymentSummary(order) {
   return lastPayment?.status ?? "NO_PAYMENT";
 }
 
-function OrderTicketSummary({ ticket }) {
+function OrderTicketSummary({ ticket, codeLabel, t }) {
   return (
     <Paper variant="outlined" sx={{ p: 1.5 }}>
       <Stack spacing={1}>
@@ -75,10 +76,10 @@ function OrderTicketSummary({ ticket }) {
               {ticket.startStationName}{" -> "}{ticket.endStationName}
             </Typography>
           </Box>
-          <Chip size="small" color={statusColor(ticket.status)} label={ticket.status} />
+          <Chip size="small" color={statusColor(ticket.status)} label={codeLabel("status", ticket.status)} />
         </Stack>
         <Typography variant="body2">
-          {formatDateTime(ticket.departureAtUtc)} - car {ticket.carOrdinal}, seat {ticket.seatNumber}
+          {formatDateTime(ticket.departureAtUtc)} - {t("Car").toLowerCase()} {ticket.carOrdinal}, {t("Seat").toLowerCase()} {ticket.seatNumber}
         </Typography>
         <Typography variant="subtitle2">{formatMoney(ticket.price, ticket.currencyCode)}</Typography>
       </Stack>
@@ -88,6 +89,7 @@ function OrderTicketSummary({ ticket }) {
 
 export function MyOrdersPage() {
   const { authorizedGet, authorizedPost, user } = useAuth();
+  const { codeLabel, t } = useI18n();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState("");
@@ -196,16 +198,16 @@ export function MyOrdersPage() {
                       color="primary.main"
                       sx={{ letterSpacing: "0.16em", fontWeight: 700 }}
                     >
-                      Orders
+                      {t("Orders")}
                     </Typography>
-                    <Typography variant="h4">My orders</Typography>
+                    <Typography variant="h4">{t("My orders")}</Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {user?.email ?? "Client"}
+                      {user?.email ?? t("Client")}
                     </Typography>
                   </Box>
                 </Stack>
                 <Button variant="contained" onClick={() => navigate("/trips/search")}>
-                  Search trips
+                  {t("Search trips")}
                 </Button>
               </Stack>
             </CardContent>
@@ -219,13 +221,13 @@ export function MyOrdersPage() {
                 <Box sx={{ py: 8, display: "grid", placeItems: "center" }}>
                   <Stack spacing={2} alignItems="center">
                     <CircularProgress />
-                    <Typography color="text.secondary">Loading orders...</Typography>
+                    <Typography color="text.secondary">{t("Loading orders...")}</Typography>
                   </Stack>
                 </Box>
               ) : null}
 
               {!isLoading && orders.length === 0 ? (
-                <Alert severity="info">No orders yet. Created and paid bookings will appear here.</Alert>
+                <Alert severity="info">{t("No orders yet. Created and paid bookings will appear here.")}</Alert>
               ) : null}
 
               {!isLoading && orders.length > 0 ? (
@@ -243,15 +245,15 @@ export function MyOrdersPage() {
                             <TrainIcon color="primary" />
                             <Box>
                               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                                Order #{order.id}
+                                {t("Order #{id}", { id: order.id })}
                               </Typography>
                               <Typography variant="body2" color="text.secondary">
-                                {formatDateTime(order.createdAtUtc)} - {order.tickets?.length ?? 0} tickets
+                                {formatDateTime(order.createdAtUtc)} - {t("{count} tickets", { count: order.tickets?.length ?? 0 })}
                               </Typography>
                             </Box>
                           </Stack>
-                          <Chip size="small" color={statusColor(order.status)} label={order.status} />
-                          <Chip size="small" variant="outlined" label={`Payment: ${paymentSummary(order)}`} />
+                          <Chip size="small" color={statusColor(order.status)} label={codeLabel("status", order.status)} />
+                          <Chip size="small" variant="outlined" label={t("Payment: {status}", { status: codeLabel("status", paymentSummary(order)) })} />
                           <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                             {formatMoney(order.totalAmount, order.currencyCode)}
                           </Typography>
@@ -262,17 +264,17 @@ export function MyOrdersPage() {
                           <Divider />
                           {order.expiresAtUtc ? (
                             <Typography variant="body2" color="text.secondary">
-                              Payment deadline: {formatDateTime(order.expiresAtUtc)}
+                              {t("Payment deadline: {date}", { date: formatDateTime(order.expiresAtUtc) })}
                             </Typography>
                           ) : null}
                           <Stack spacing={1.25}>
                             {(order.tickets ?? []).map((ticket) => (
-                              <OrderTicketSummary key={ticket.id} ticket={ticket} />
+                              <OrderTicketSummary key={ticket.id} ticket={ticket} codeLabel={codeLabel} t={t} />
                             ))}
                           </Stack>
                           {order.status === "PENDING" ? (
                             <Stack spacing={1.5}>
-                              <Alert severity="warning">This order is reserved until the payment deadline.</Alert>
+                              <Alert severity="warning">{t("This order is reserved until the payment deadline.")}</Alert>
                               {canPayOrder(order) ? (
                                 <Button
                                   variant="contained"
@@ -281,7 +283,7 @@ export function MyOrdersPage() {
                                   disabled={openingPaymentOrderId === order.id}
                                   sx={{ alignSelf: "flex-start" }}
                                 >
-                                  {openingPaymentOrderId === order.id ? "Opening payment..." : "Pay order"}
+                                  {openingPaymentOrderId === order.id ? t("Opening payment...") : t("Pay order")}
                                 </Button>
                               ) : null}
                             </Stack>

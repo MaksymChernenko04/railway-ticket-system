@@ -36,6 +36,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { nextSortState, SortableTableCell, sortRows } from "../components/SortableTableCell.jsx";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
 const emptyForm = {
   trainId: "",
@@ -46,12 +47,6 @@ const emptyForm = {
 const emptyCarPicker = {
   carId: "",
   ordinal: "",
-};
-
-const directionLabel = {
-  FORWARD: "Forward",
-  BACKWARD: "Backward",
-  SIDEWAYS: "Sideways",
 };
 
 function toDateTimeLocal(value) {
@@ -71,6 +66,29 @@ function toDateTimeLocal(value) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function toDateTimeParts(value) {
+  if (!value) {
+    return { date: "", time: "" };
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return { date: value, time: "" };
+  }
+
+  return {
+    date: date.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }),
+    time: date.toLocaleTimeString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+  };
 }
 
 function formatSeatSummary(seats) {
@@ -176,6 +194,8 @@ function renderSelectableSeat(
   seat,
   selectedSeatIds,
   onToggleSeat,
+  t,
+  codeLabel,
   orientation = "seat",
   readOnly = false,
   level = "seat",
@@ -201,9 +221,9 @@ function renderSelectableSeat(
 
   return (
     <Tooltip
-      title={`Seat ${seat.number}, ${seat.typeCode}${level === "seat" ? "" : `, ${level}`}, ${
-        directionLabel[seat.direction] ?? seat.direction
-      }`}
+      title={`${t("Seat")} ${seat.number}, ${codeLabel("seatType", seat.typeCode)}${
+        level === "seat" ? "" : `, ${t(level)}`
+      }, ${codeLabel("direction", seat.direction)}`}
     >
       <Box
         component={readOnly ? "div" : "button"}
@@ -218,7 +238,7 @@ function renderSelectableSeat(
   );
 }
 
-function renderCoupeBlock(rowNumber, rowSeats, lux, selectedSeatIds, onToggleSeat, readOnly = false) {
+function renderCoupeBlock(rowNumber, rowSeats, lux, selectedSeatIds, onToggleSeat, t, codeLabel, readOnly = false) {
   const leftLower = getSeatByColumn(rowSeats, 1);
   const leftUpper = lux ? null : getSeatByColumn(rowSeats, 2);
   const rightLower = getSeatByColumn(rowSeats, lux ? 2 : 3);
@@ -227,7 +247,7 @@ function renderCoupeBlock(rowNumber, rowSeats, lux, selectedSeatIds, onToggleSea
   return (
     <Stack spacing={0.75} alignItems="center">
       <Typography variant="caption" color="text.secondary">
-        {lux ? "Compartment" : "Coupe"} {rowNumber}
+        {t(lux ? "Compartment" : "Coupe")} {rowNumber}
       </Typography>
       <Box
         sx={{
@@ -242,20 +262,20 @@ function renderCoupeBlock(rowNumber, rowSeats, lux, selectedSeatIds, onToggleSea
         }}
       >
         <Stack spacing={0.5}>
-          {lux ? null : renderSelectableSeat(leftUpper, selectedSeatIds, onToggleSeat, "berth", readOnly, "upper")}
-          {renderSelectableSeat(leftLower, selectedSeatIds, onToggleSeat, "berth", readOnly, "lower")}
+          {lux ? null : renderSelectableSeat(leftUpper, selectedSeatIds, onToggleSeat, t, codeLabel, "berth", readOnly, "upper")}
+          {renderSelectableSeat(leftLower, selectedSeatIds, onToggleSeat, t, codeLabel, "berth", readOnly, "lower")}
         </Stack>
         {renderCorridor({ width: 18, height: lux ? 62 : 126 })}
         <Stack spacing={0.5}>
-          {lux ? null : renderSelectableSeat(rightUpper, selectedSeatIds, onToggleSeat, "berth", readOnly, "upper")}
-          {renderSelectableSeat(rightLower, selectedSeatIds, onToggleSeat, "berth", readOnly, "lower")}
+          {lux ? null : renderSelectableSeat(rightUpper, selectedSeatIds, onToggleSeat, t, codeLabel, "berth", readOnly, "upper")}
+          {renderSelectableSeat(rightLower, selectedSeatIds, onToggleSeat, t, codeLabel, "berth", readOnly, "lower")}
         </Stack>
       </Box>
     </Stack>
   );
 }
 
-function renderSleeperScheme(tripCar, onToggleSeat, readOnly = false) {
+function renderSleeperScheme(tripCar, onToggleSeat, t, codeLabel, readOnly = false) {
   const rows = groupSeatsByRow(tripCar.seats);
   const carType = tripCar.carTypeCode?.toUpperCase();
   const isLux = carType === "LUX_SLEEPER";
@@ -266,7 +286,7 @@ function renderSleeperScheme(tripCar, onToggleSeat, readOnly = false) {
       <Stack direction="row" spacing={1.5} alignItems="flex-start">
         {rows.map(([row, rowSeats]) => (
           <Stack key={row} spacing={0.75} alignItems="center">
-            {renderCoupeBlock(row, rowSeats, isLux, tripCar.seatIds, onToggleSeat, readOnly)}
+            {renderCoupeBlock(row, rowSeats, isLux, tripCar.seatIds, onToggleSeat, t, codeLabel, readOnly)}
             {isOpen ? (
               <>
                 {renderCorridor({ width: 126, height: 22 })}
@@ -275,6 +295,8 @@ function renderSleeperScheme(tripCar, onToggleSeat, readOnly = false) {
                     getSeatByColumn(rowSeats, 6),
                     tripCar.seatIds,
                     onToggleSeat,
+                    t,
+                    codeLabel,
                     "forward",
                     readOnly,
                     "upper",
@@ -283,6 +305,8 @@ function renderSleeperScheme(tripCar, onToggleSeat, readOnly = false) {
                     getSeatByColumn(rowSeats, 5),
                     tripCar.seatIds,
                     onToggleSeat,
+                    t,
+                    codeLabel,
                     "forward",
                     readOnly,
                     "lower",
@@ -299,7 +323,7 @@ function renderSleeperScheme(tripCar, onToggleSeat, readOnly = false) {
   );
 }
 
-function renderFirstClassRow(rowSeats, selectedSeatIds, onToggleSeat, readOnly = false) {
+function renderFirstClassRow(rowSeats, selectedSeatIds, onToggleSeat, t, codeLabel, readOnly = false) {
   const orderedSeats = [1, 2, 3].map((column) => getSeatByColumn(rowSeats, column));
   const presentSeats = orderedSeats.filter(Boolean);
   const directionSplitIndex = presentSeats.findIndex(
@@ -313,20 +337,20 @@ function renderFirstClassRow(rowSeats, selectedSeatIds, onToggleSeat, readOnly =
     <Stack spacing={0.5} alignItems="center">
       {leftColumns.map((seat, index) => (
         <Box key={seat?.id ?? `left-empty-${index}`}>
-          {renderSelectableSeat(seat, selectedSeatIds, onToggleSeat, "seat", readOnly)}
+          {renderSelectableSeat(seat, selectedSeatIds, onToggleSeat, t, codeLabel, "seat", readOnly)}
         </Box>
       ))}
       {renderCorridor({ width: 44, height: 22 })}
       {rightColumns.map((seat, index) => (
         <Box key={seat?.id ?? `right-empty-${index}`}>
-          {renderSelectableSeat(seat, selectedSeatIds, onToggleSeat, "seat", readOnly)}
+          {renderSelectableSeat(seat, selectedSeatIds, onToggleSeat, t, codeLabel, "seat", readOnly)}
         </Box>
       ))}
     </Stack>
   );
 }
 
-function renderSittingScheme(tripCar, onToggleSeat, readOnly = false) {
+function renderSittingScheme(tripCar, onToggleSeat, t, codeLabel, readOnly = false) {
   const rows = groupSeatsByRow(tripCar.seats);
   const isFirstClass = tripCar.carTypeCode?.toUpperCase() === "SITTING_CLASS_1";
 
@@ -336,17 +360,17 @@ function renderSittingScheme(tripCar, onToggleSeat, readOnly = false) {
         {rows.map(([row, rowSeats]) => (
           <Stack key={row} spacing={0.75} alignItems="center">
             <Typography variant="caption" color="text.secondary">
-              Row {row}
+              {t("Row")} {row}
             </Typography>
             {isFirstClass ? (
-              renderFirstClassRow(rowSeats, tripCar.seatIds, onToggleSeat, readOnly)
+              renderFirstClassRow(rowSeats, tripCar.seatIds, onToggleSeat, t, codeLabel, readOnly)
             ) : (
               <Stack spacing={0.5} alignItems="center">
-                {renderSelectableSeat(getSeatByColumn(rowSeats, 1), tripCar.seatIds, onToggleSeat, "seat", readOnly)}
-                {renderSelectableSeat(getSeatByColumn(rowSeats, 2), tripCar.seatIds, onToggleSeat, "seat", readOnly)}
+                {renderSelectableSeat(getSeatByColumn(rowSeats, 1), tripCar.seatIds, onToggleSeat, t, codeLabel, "seat", readOnly)}
+                {renderSelectableSeat(getSeatByColumn(rowSeats, 2), tripCar.seatIds, onToggleSeat, t, codeLabel, "seat", readOnly)}
                 {renderCorridor({ width: 44, height: 22 })}
-                {renderSelectableSeat(getSeatByColumn(rowSeats, 3), tripCar.seatIds, onToggleSeat, "seat", readOnly)}
-                {renderSelectableSeat(getSeatByColumn(rowSeats, 4), tripCar.seatIds, onToggleSeat, "seat", readOnly)}
+                {renderSelectableSeat(getSeatByColumn(rowSeats, 3), tripCar.seatIds, onToggleSeat, t, codeLabel, "seat", readOnly)}
+                {renderSelectableSeat(getSeatByColumn(rowSeats, 4), tripCar.seatIds, onToggleSeat, t, codeLabel, "seat", readOnly)}
               </Stack>
             )}
           </Stack>
@@ -356,7 +380,7 @@ function renderSittingScheme(tripCar, onToggleSeat, readOnly = false) {
   );
 }
 
-function renderGenericScheme(tripCar, onToggleSeat, readOnly = false) {
+function renderGenericScheme(tripCar, onToggleSeat, t, codeLabel, readOnly = false) {
   const rows = groupSeatsByRow(tripCar.seats);
 
   return (
@@ -365,10 +389,10 @@ function renderGenericScheme(tripCar, onToggleSeat, readOnly = false) {
         {rows.map(([row, rowSeats]) => (
           <Stack key={row} spacing={0.75} alignItems="center">
             <Typography variant="caption" color="text.secondary">
-              Row {row}
+              {t("Row")} {row}
             </Typography>
             {rowSeats.map((seat) => (
-              <Box key={seat.id}>{renderSelectableSeat(seat, tripCar.seatIds, onToggleSeat, "seat", readOnly)}</Box>
+              <Box key={seat.id}>{renderSelectableSeat(seat, tripCar.seatIds, onToggleSeat, t, codeLabel, "seat", readOnly)}</Box>
             ))}
           </Stack>
         ))}
@@ -377,13 +401,13 @@ function renderGenericScheme(tripCar, onToggleSeat, readOnly = false) {
   );
 }
 
-function renderTripSeatScheme(tripCar, onToggleSeat, readOnly = false) {
+function renderTripSeatScheme(tripCar, onToggleSeat, t, codeLabel, readOnly = false) {
   const carType = tripCar.carTypeCode?.toUpperCase();
   const isSleeper = ["COUPE_SLEEPER", "LUX_SLEEPER", "OPEN_SLEEPER"].includes(carType);
   const isSitting = ["SITTING_CLASS_1", "SITTING_CLASS_2"].includes(carType);
 
   if (tripCar.seats.length === 0) {
-    return <Alert severity="info">This car has no seats yet.</Alert>;
+    return <Alert severity="info">{t("This car has no seats yet.")}</Alert>;
   }
 
   return (
@@ -396,15 +420,16 @@ function renderTripSeatScheme(tripCar, onToggleSeat, readOnly = false) {
         p: 2,
       }}
     >
-      {isSleeper ? renderSleeperScheme(tripCar, onToggleSeat, readOnly) : null}
-      {isSitting ? renderSittingScheme(tripCar, onToggleSeat, readOnly) : null}
-      {isSleeper || isSitting ? null : renderGenericScheme(tripCar, onToggleSeat, readOnly)}
+      {isSleeper ? renderSleeperScheme(tripCar, onToggleSeat, t, codeLabel, readOnly) : null}
+      {isSitting ? renderSittingScheme(tripCar, onToggleSeat, t, codeLabel, readOnly) : null}
+      {isSleeper || isSitting ? null : renderGenericScheme(tripCar, onToggleSeat, t, codeLabel, readOnly)}
     </Box>
   );
 }
 
 export function AdminTripsPage() {
   const { authorizedGet, authorizedPost, authorizedDelete, user } = useAuth();
+  const { t, codeLabel } = useI18n();
   const [tripsPage, setTripsPage] = useState(null);
   const [trains, setTrains] = useState([]);
   const [routes, setRoutes] = useState([]);
@@ -530,7 +555,7 @@ export function AdminTripsPage() {
 
   async function addTripCar() {
     if (!carPicker.carId || !carPicker.ordinal) {
-      setError("Select car and ordinal before adding it to trip.");
+      setError(t("Select car and ordinal before adding it to trip."));
       return;
     }
 
@@ -601,22 +626,22 @@ export function AdminTripsPage() {
     setError("");
 
     if (!form.departureAt) {
-      setError("Departure date and time are required.");
+      setError(t("Departure date and time are required."));
       return;
     }
 
     if (selectedStops.length === 0) {
-      setError("Select at least one station from the route.");
+      setError(t("Select at least one station from the route."));
       return;
     }
 
     if (tripCars.length === 0) {
-      setError("Add at least one car to the trip.");
+      setError(t("Add at least one car to the trip."));
       return;
     }
 
     if (tripCars.some((tripCar) => tripCar.seatIds.length === 0)) {
-      setError("Select at least one seat for every trip car.");
+      setError(t("Select at least one seat for every trip car."));
       return;
     }
 
@@ -641,7 +666,7 @@ export function AdminTripsPage() {
         })),
       });
 
-      setFeedback("Trip created.");
+      setFeedback(t("Trip created."));
       setForm((current) => ({ trainId: current.trainId, routeId: current.routeId, departureAt: "" }));
       setTripCars([]);
       await loadRouteStops(form.routeId);
@@ -654,7 +679,7 @@ export function AdminTripsPage() {
   }
 
   async function deleteTrip(id) {
-    if (!globalThis.confirm("Are you sure you want to delete this trip?")) {
+    if (!globalThis.confirm(t("Are you sure you want to delete this trip?"))) {
       return;
     }
 
@@ -663,7 +688,7 @@ export function AdminTripsPage() {
 
     try {
       await authorizedDelete(`/api/admin/trips/${id}`);
-      setFeedback("Trip deleted.");
+      setFeedback(t("Trip deleted."));
 
       const isLastItemOnPage = tripsPage?.content?.length === 1;
       const nextPageIndex = isLastItemOnPage && pageIndex > 0 ? pageIndex - 1 : pageIndex;
@@ -731,11 +756,14 @@ export function AdminTripsPage() {
                 </Box>
                 <Box>
                   <Typography variant="overline" color="primary.main" sx={{ letterSpacing: "0.16em", fontWeight: 700 }}>
-                    Admin panel
+                    {t("Admin panel")}
                   </Typography>
-                  <Typography variant="h4">Trips management</Typography>
+                  <Typography variant="h4">{t("Trips management")}</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Logged in as {user?.firstName} {user?.lastName} ({user?.email})
+                    {t("Logged in as {name} ({email})", {
+                      name: `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim(),
+                      email: user?.email,
+                    })}
                   </Typography>
                 </Box>
               </Stack>
@@ -754,33 +782,33 @@ export function AdminTripsPage() {
               <CardContent sx={{ p: 3 }}>
                 <Stack spacing={3} component="form" onSubmit={handleSubmit}>
                   <Box>
-                    <Typography variant="h5">Create trip</Typography>
+                    <Typography variant="h5">{t("Create trip")}</Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                      Creates trip, trip stops, trip cars, and trip seats in one request.
+                      {t("Creates trip, trip stops, trip cars, and trip seats in one request.")}
                     </Typography>
                   </Box>
 
                   <FormControl fullWidth required disabled={isReferenceLoading}>
-                    <InputLabel id="trip-train-label">Train</InputLabel>
+                    <InputLabel id="trip-train-label">{t("Train")}</InputLabel>
                     <Select
                       labelId="trip-train-label"
-                      label="Train"
+                      label={t("Train")}
                       value={form.trainId}
                       onChange={(event) => setForm({ ...form, trainId: event.target.value })}
                     >
                       {trains.map((train) => (
                         <MenuItem key={train.id} value={String(train.id)}>
-                          {train.number} - {train.name} ({train.typeCode})
+                          {train.number} - {train.name} ({codeLabel("trainType", train.typeCode)})
                         </MenuItem>
                       ))}
                     </Select>
                   </FormControl>
 
                   <FormControl fullWidth required disabled={isReferenceLoading}>
-                    <InputLabel id="trip-route-label">Route</InputLabel>
+                    <InputLabel id="trip-route-label">{t("Route")}</InputLabel>
                     <Select
                       labelId="trip-route-label"
-                      label="Route"
+                      label={t("Route")}
                       value={form.routeId}
                       onChange={(event) => handleRouteChange(event.target.value)}
                     >
@@ -793,7 +821,7 @@ export function AdminTripsPage() {
                   </FormControl>
 
                   <TextField
-                    label="Departure date and time"
+                    label={t("Departure date and time")}
                     type="datetime-local"
                     value={form.departureAt}
                     onChange={(event) => setForm({ ...form, departureAt: event.target.value })}
@@ -804,13 +832,13 @@ export function AdminTripsPage() {
 
                   <Stack spacing={1.5}>
                     <Box>
-                      <Typography variant="h6">Stations and offsets</Typography>
+                      <Typography variant="h6">{t("Stations and offsets")}</Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {selectedRoute ? `${selectedRoute.number} - ${selectedRoute.name}` : "Select route"}
+                        {selectedRoute ? `${selectedRoute.number} - ${selectedRoute.name}` : t("Select route")}
                       </Typography>
                     </Box>
 
-                    {!stops.length ? <Alert severity="info">Selected route has no stations.</Alert> : null}
+                    {!stops.length ? <Alert severity="info">{t("Selected route has no stations.")}</Alert> : null}
 
                     {stops.map((stop) => (
                       <Paper key={stop.routeStopId} variant="outlined" sx={{ p: 1.5 }}>
@@ -828,7 +856,7 @@ export function AdminTripsPage() {
                           </Stack>
                           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
                             <TextField
-                              label="Platform"
+                              label={t("Platform")}
                               type="number"
                               size="small"
                               value={stop.platform}
@@ -838,7 +866,7 @@ export function AdminTripsPage() {
                               disabled={!stop.selected}
                             />
                             <TextField
-                              label="Track"
+                              label={t("Track")}
                               type="number"
                               size="small"
                               value={stop.track}
@@ -848,7 +876,7 @@ export function AdminTripsPage() {
                               disabled={!stop.selected}
                             />
                             <TextField
-                              label="Arrival offset"
+                              label={t("Arrival offset")}
                               type="number"
                               size="small"
                               value={stop.arrivalOffsetMinutes}
@@ -860,7 +888,7 @@ export function AdminTripsPage() {
                               disabled={!stop.selected}
                             />
                             <TextField
-                              label="Departure offset"
+                              label={t("Departure offset")}
                               type="number"
                               size="small"
                               value={stop.departureOffsetMinutes}
@@ -878,33 +906,38 @@ export function AdminTripsPage() {
                   </Stack>
 
                   <Stack spacing={1.5}>
-                    <Typography variant="h6">Cars and seats</Typography>
+                    <Typography variant="h6">{t("Cars and seats")}</Typography>
                     <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25} alignItems={{ sm: "flex-end" }}>
                       <FormControl fullWidth>
-                        <InputLabel id="trip-car-label">Car</InputLabel>
+                        <InputLabel id="trip-car-label">{t("Car")}</InputLabel>
                         <Select
                           labelId="trip-car-label"
-                          label="Car"
+                          label={t("Car")}
                           value={carPicker.carId}
                           onChange={(event) => setCarPicker({ ...carPicker, carId: event.target.value })}
                         >
                           {selectableCars.map((car) => (
                             <MenuItem key={car.id} value={String(car.id)}>
-                              {car.number} ({car.typeCode})
+                              {car.number} ({codeLabel("carType", car.typeCode)})
                             </MenuItem>
                           ))}
                         </Select>
                       </FormControl>
                       <TextField
-                        label="Ordinal"
+                        label={t("Ordinal")}
                         type="number"
                         value={carPicker.ordinal}
                         onChange={(event) => setCarPicker({ ...carPicker, ordinal: event.target.value })}
                         slotProps={{ htmlInput: { min: 1 } }}
                         sx={{ minWidth: 120 }}
                       />
-                      <Button variant="outlined" startIcon={<AddIcon />} onClick={addTripCar}>
-                        Add
+                      <Button
+                        variant="outlined"
+                        startIcon={<AddIcon />}
+                        onClick={addTripCar}
+                        sx={{ minWidth: { sm: 132 }, minHeight: 56 }}
+                      >
+                        {t("Add")}
                       </Button>
                     </Stack>
 
@@ -914,18 +947,21 @@ export function AdminTripsPage() {
                           <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
                             <Box>
                               <Typography variant="subtitle2">
-                                Car {tripCar.ordinal}: {tripCar.carNumber} ({tripCar.carTypeCode})
+                                {t("Car")} {tripCar.ordinal}: {tripCar.carNumber} ({codeLabel("carType", tripCar.carTypeCode)})
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                {tripCar.seatIds.length} of {tripCar.seats.length} seats selected
+                                {t("{count} of {total} seats selected", {
+                                  count: tripCar.seatIds.length,
+                                  total: tripCar.seats.length,
+                                })}
                               </Typography>
                             </Box>
                             <Stack direction="row" spacing={1} alignItems="center">
                               <Button size="small" variant="outlined" onClick={() => selectAllTripSeats(tripCar.carId)}>
-                                Select all
+                                {t("Select all")}
                               </Button>
                               <Button size="small" variant="outlined" onClick={() => clearTripSeats(tripCar.carId)}>
-                                Clear
+                                {t("Clear")}
                               </Button>
                               <IconButton color="error" onClick={() => removeTripCar(tripCar.carId)}>
                                 <DeleteIcon />
@@ -933,7 +969,12 @@ export function AdminTripsPage() {
                             </Stack>
                           </Stack>
 
-                          {renderTripSeatScheme(tripCar, (seatId) => toggleTripSeat(tripCar.carId, seatId))}
+                          {renderTripSeatScheme(
+                            tripCar,
+                            (seatId) => toggleTripSeat(tripCar.carId, seatId),
+                            t,
+                            codeLabel,
+                          )}
                         </Stack>
                       </Paper>
                     ))}
@@ -942,7 +983,7 @@ export function AdminTripsPage() {
                   {error ? <Alert severity="error">{error}</Alert> : null}
 
                   <Button type="submit" variant="contained" size="large" disabled={isSubmitting || isReferenceLoading}>
-                    {isSubmitting ? "Saving..." : "Create trip"}
+                    {isSubmitting ? t("Saving...") : t("Create trip")}
                   </Button>
                 </Stack>
               </CardContent>
@@ -957,9 +998,9 @@ export function AdminTripsPage() {
                     alignItems={{ xs: "flex-start", sm: "center" }}
                     spacing={2}
                   >
-                    <Typography variant="h5">Existing trips</Typography>
+                    <Typography variant="h5">{t("Existing trips")}</Typography>
                     <Button variant="outlined" startIcon={<RefreshIcon />} onClick={() => loadTrips(pageIndex)}>
-                      Refresh
+                      {t("Refresh")}
                     </Button>
                   </Stack>
 
@@ -969,7 +1010,7 @@ export function AdminTripsPage() {
                     <Box sx={{ py: 8, display: "grid", placeItems: "center" }}>
                       <Stack spacing={2} alignItems="center">
                         <CircularProgress />
-                        <Typography color="text.secondary">Loading trips...</Typography>
+                        <Typography color="text.secondary">{t("Loading trips...")}</Typography>
                       </Stack>
                     </Box>
                   ) : null}
@@ -980,40 +1021,51 @@ export function AdminTripsPage() {
                         <Table>
                           <TableHead>
                             <TableRow>
-                              <SortableTableCell sort={sort} field="departureAtUtc" onSort={handleSort}>Departure</SortableTableCell>
-                              <SortableTableCell sort={sort} field="trainNumber" onSort={handleSort}>Train</SortableTableCell>
-                              <SortableTableCell sort={sort} field="routeNumber" onSort={handleSort}>Route</SortableTableCell>
-                              <SortableTableCell sort={sort} field="stopCount" onSort={handleSort}>Stops</SortableTableCell>
-                              <SortableTableCell sort={sort} field="carCount" onSort={handleSort}>Cars</SortableTableCell>
-                              <SortableTableCell sort={sort} field="seatCount" onSort={handleSort}>Seats</SortableTableCell>
-                              <TableCell>Action</TableCell>
+                              <SortableTableCell sort={sort} field="departureAtUtc" onSort={handleSort}>{t("Departure")}</SortableTableCell>
+                              <SortableTableCell sort={sort} field="trainNumber" onSort={handleSort}>{t("Train")}</SortableTableCell>
+                              <SortableTableCell sort={sort} field="routeNumber" onSort={handleSort}>{t("Route")}</SortableTableCell>
+                              <SortableTableCell sort={sort} field="stopCount" onSort={handleSort}>{t("Stops")}</SortableTableCell>
+                              <SortableTableCell sort={sort} field="carCount" onSort={handleSort}>{t("Cars")}</SortableTableCell>
+                              <SortableTableCell sort={sort} field="seatCount" onSort={handleSort}>{t("Seats")}</SortableTableCell>
+                              <TableCell>{t("Action")}</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {sortedTrips.map((trip) => (
-                              <TableRow key={trip.id} hover>
-                                <TableCell>{toDateTimeLocal(trip.departureAtUtc)}</TableCell>
-                                <TableCell>
-                                  {trip.trainNumber} - {trip.trainName}
-                                </TableCell>
-                                <TableCell>
-                                  {trip.routeNumber} - {trip.routeName}
-                                </TableCell>
-                                <TableCell>{trip.stopCount}</TableCell>
-                                <TableCell>{trip.carCount}</TableCell>
-                                <TableCell>{trip.seatCount}</TableCell>
-                                <TableCell>
-                                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-                                    <Button variant="outlined" onClick={() => openTripDetails(trip.id)}>
-                                      Details
-                                    </Button>
-                                    <Button variant="contained" color="error" onClick={() => deleteTrip(trip.id)}>
-                                      Delete
-                                    </Button>
-                                  </Stack>
-                                </TableCell>
-                              </TableRow>
-                            ))}
+                            {sortedTrips.map((trip) => {
+                              const departure = toDateTimeParts(trip.departureAtUtc);
+
+                              return (
+                                <TableRow key={trip.id} hover>
+                                  <TableCell sx={{ whiteSpace: "nowrap" }}>
+                                    <Stack spacing={0.25}>
+                                      <Typography variant="body2">{departure.date}</Typography>
+                                      <Typography variant="caption" color="text.secondary">
+                                        {departure.time}
+                                      </Typography>
+                                    </Stack>
+                                  </TableCell>
+                                  <TableCell>
+                                    {trip.trainNumber} - {trip.trainName}
+                                  </TableCell>
+                                  <TableCell>
+                                    {trip.routeNumber} - {trip.routeName}
+                                  </TableCell>
+                                  <TableCell>{trip.stopCount}</TableCell>
+                                  <TableCell>{trip.carCount}</TableCell>
+                                  <TableCell>{trip.seatCount}</TableCell>
+                                  <TableCell>
+                                    <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                                      <Button variant="outlined" onClick={() => openTripDetails(trip.id)}>
+                                        {t("Details")}
+                                      </Button>
+                                      <Button variant="contained" color="error" onClick={() => deleteTrip(trip.id)}>
+                                        {t("Delete")}
+                                      </Button>
+                                    </Stack>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
                           </TableBody>
                         </Table>
                       </TableContainer>
@@ -1025,19 +1077,24 @@ export function AdminTripsPage() {
                         spacing={2}
                       >
                         <Button variant="outlined" onClick={() => loadTrips(pageIndex - 1)} disabled={tripsPage.first}>
-                          Previous
+                          {t("Previous")}
                         </Button>
                         <Typography variant="body2" color="text.secondary">
-                          Page {tripsPage.number + 1} of {tripsPage.totalPages || 1}
+                          {t("Page {current} of {total}", {
+                            current: tripsPage.number + 1,
+                            total: tripsPage.totalPages || 1,
+                          })}
                         </Typography>
                         <Button variant="outlined" onClick={() => loadTrips(pageIndex + 1)} disabled={tripsPage.last}>
-                          Next
+                          {t("Next")}
                         </Button>
                       </Stack>
                     </>
                   ) : null}
 
-                  {!isLoading && !tripsPage?.content?.length ? <Alert severity="info">No trips found yet.</Alert> : null}
+                  {!isLoading && !tripsPage?.content?.length ? (
+                    <Alert severity="info">{t("No trips found yet.")}</Alert>
+                  ) : null}
                 </Stack>
               </CardContent>
             </Card>
@@ -1048,14 +1105,18 @@ export function AdminTripsPage() {
       <Dialog open={Boolean(selectedTrip) || isDetailsLoading || Boolean(detailsError)} onClose={closeTripDetails} fullWidth maxWidth="lg">
         <DialogTitle sx={{ pr: 7 }}>
           <Stack spacing={0.5}>
-            <Typography variant="h5">Trip details</Typography>
+            <Typography variant="h5">{t("Trip details")}</Typography>
             <Typography variant="body2" color="text.secondary">
               {selectedTrip
-                ? `${selectedTrip.trainNumber} on ${selectedTrip.routeNumber}, ${toDateTimeLocal(selectedTrip.departureAtUtc)}`
+                ? t("Trip {train} on {route}, {date}", {
+                    train: selectedTrip.trainNumber,
+                    route: selectedTrip.routeNumber,
+                    date: toDateTimeLocal(selectedTrip.departureAtUtc),
+                  })
                 : ""}
             </Typography>
           </Stack>
-          <IconButton aria-label="Close trip details" onClick={closeTripDetails} sx={{ position: "absolute", right: 16, top: 16 }}>
+          <IconButton aria-label={t("Close trip details")} onClick={closeTripDetails} sx={{ position: "absolute", right: 16, top: 16 }}>
             <CloseIcon />
           </IconButton>
         </DialogTitle>
@@ -1071,17 +1132,17 @@ export function AdminTripsPage() {
           {selectedTrip ? (
             <Stack spacing={3}>
               <Box>
-                <Typography variant="h6" sx={{ mb: 1.5 }}>Stops</Typography>
+                <Typography variant="h6" sx={{ mb: 1.5 }}>{t("Stops")}</Typography>
                 <TableContainer component={Paper} variant="outlined">
                   <Table>
                     <TableHead>
                       <TableRow>
-                        <SortableTableCell sort={detailsStopsSort} field="ordinal" onSort={handleDetailsStopsSort}>Station</SortableTableCell>
-                        <SortableTableCell sort={detailsStopsSort} field="platform" onSort={handleDetailsStopsSort}>Platform</SortableTableCell>
-                        <SortableTableCell sort={detailsStopsSort} field="track" onSort={handleDetailsStopsSort}>Track</SortableTableCell>
-                        <SortableTableCell sort={detailsStopsSort} field="arrivalAtUtc" onSort={handleDetailsStopsSort}>Arrival</SortableTableCell>
-                        <SortableTableCell sort={detailsStopsSort} field="departureAtUtc" onSort={handleDetailsStopsSort}>Departure</SortableTableCell>
-                        <SortableTableCell sort={detailsStopsSort} field="arrivalOffsetMinutes" onSort={handleDetailsStopsSort}>Offsets</SortableTableCell>
+                        <SortableTableCell sort={detailsStopsSort} field="ordinal" onSort={handleDetailsStopsSort}>{t("Station")}</SortableTableCell>
+                        <SortableTableCell sort={detailsStopsSort} field="platform" onSort={handleDetailsStopsSort}>{t("Platform")}</SortableTableCell>
+                        <SortableTableCell sort={detailsStopsSort} field="track" onSort={handleDetailsStopsSort}>{t("Track")}</SortableTableCell>
+                        <SortableTableCell sort={detailsStopsSort} field="arrivalAtUtc" onSort={handleDetailsStopsSort}>{t("Arrival")}</SortableTableCell>
+                        <SortableTableCell sort={detailsStopsSort} field="departureAtUtc" onSort={handleDetailsStopsSort}>{t("Departure")}</SortableTableCell>
+                        <SortableTableCell sort={detailsStopsSort} field="arrivalOffsetMinutes" onSort={handleDetailsStopsSort}>{t("Offsets")}</SortableTableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -1105,17 +1166,17 @@ export function AdminTripsPage() {
               </Box>
 
               <Box>
-                <Typography variant="h6" sx={{ mb: 1.5 }}>Cars</Typography>
+                <Typography variant="h6" sx={{ mb: 1.5 }}>{t("Cars")}</Typography>
                 <Stack spacing={1.5}>
                   {selectedTrip.cars.map((tripCar) => (
                     <Paper key={tripCar.id} variant="outlined" sx={{ p: 2 }}>
                       <Stack spacing={1.25}>
                         <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }}>
                           <Typography variant="subtitle1">
-                            {tripCar.ordinal}. Car {tripCar.carNumber} ({tripCar.carTypeCode})
+                            {tripCar.ordinal}. {t("Car")} {tripCar.carNumber} ({codeLabel("carType", tripCar.carTypeCode)})
                           </Typography>
-                          {tripCar.accessible ? <Chip size="small" color="success" label="Accessible" /> : null}
-                          <Chip size="small" variant="outlined" label={`${tripCar.seats.length} seats`} />
+                          {tripCar.accessible ? <Chip size="small" color="success" label={t("Accessible")} /> : null}
+                          <Chip size="small" variant="outlined" label={t("{count} seats", { count: tripCar.seats.length })} />
                         </Stack>
                         {renderTripSeatScheme(
                           {
@@ -1123,6 +1184,8 @@ export function AdminTripsPage() {
                             seatIds: tripCar.seats.map((seat) => String(seat.id)),
                           },
                           () => {},
+                          t,
+                          codeLabel,
                           true,
                         )}
                       </Stack>

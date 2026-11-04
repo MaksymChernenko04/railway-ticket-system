@@ -1,5 +1,8 @@
 import SearchIcon from "@mui/icons-material/Search";
+import TipsAndUpdatesIcon from "@mui/icons-material/TipsAndUpdates";
 import TrainIcon from "@mui/icons-material/Train";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import {
   Alert,
   Autocomplete,
@@ -17,12 +20,24 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
 function toDateInputValue(date = new Date()) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function addDaysToDateInputValue(value, days) {
+  const [year, month, day] = String(value).split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  if (Number.isNaN(date.getTime())) {
+    return toDateInputValue();
+  }
+
+  date.setDate(date.getDate() + days);
+  return toDateInputValue(date);
 }
 
 function formatDateTime(value) {
@@ -44,7 +59,7 @@ function formatDateTime(value) {
   });
 }
 
-function formatDuration(start, end) {
+function formatDuration(start, end, t) {
   const startDate = new Date(start);
   const endDate = new Date(end);
   const diffMinutes = Math.max(0, Math.round((endDate.getTime() - startDate.getTime()) / 60000));
@@ -52,10 +67,10 @@ function formatDuration(start, end) {
   const minutes = diffMinutes % 60;
 
   if (hours === 0) {
-    return `${minutes} min`;
+    return t("{count} min", { count: minutes });
   }
 
-  return `${hours} h ${minutes} min`;
+  return t("{hours} h {minutes} min", { hours, minutes });
 }
 
 function buildSearchParams(form) {
@@ -66,10 +81,26 @@ function buildSearchParams(form) {
   return params.toString();
 }
 
+function resolveRecommendationMessage(data, t) {
+  const backendMessage = data?.message?.trim();
+  if (backendMessage) {
+    return backendMessage;
+  }
+
+  if (!data?.messageKey) {
+    return "";
+  }
+
+  const translatedMessage = t(data.messageKey, data.messageArgs);
+  return translatedMessage === data.messageKey ? "" : translatedMessage;
+}
+
 export function SearchTripsPage() {
   const { authorizedGet, user } = useAuth();
+  const { t, language } = useI18n();
   const navigate = useNavigate();
   const todayInputValue = useMemo(() => toDateInputValue(), []);
+  const shouldShowRecommendation = user?.role !== "ADMIN";
   const [stations, setStations] = useState([]);
   const [form, setForm] = useState({
     originStationId: "",
@@ -81,6 +112,9 @@ export function SearchTripsPage() {
   const [trips, setTrips] = useState([]);
   const [error, setError] = useState("");
   const [isLoadingStations, setIsLoadingStations] = useState(true);
+  const [isLoadingRecommendation, setIsLoadingRecommendation] = useState(true);
+  const [recommendation, setRecommendation] = useState("");
+  const [recommendationAction, setRecommendationAction] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
@@ -96,6 +130,57 @@ export function SearchTripsPage() {
     () => stations.find((station) => String(station.id) === String(form.destinationStationId)) ?? null,
     [stations, form.destinationStationId],
   );
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadRecommendation() {
+      if (!shouldShowRecommendation) {
+        setIsLoadingRecommendation(false);
+        setRecommendation("");
+        setRecommendationAction(null);
+        return;
+      }
+
+      setIsLoadingRecommendation(true);
+
+      try {
+        const data = await authorizedGet(
+            `/api/client/assistant/search-recommendation?language=${encodeURIComponent(language)}`,
+        );
+
+        if (isActive) {
+          const message = resolveRecommendationMessage(data, t);
+          setRecommendation(
+            message || t("Choose your route and travel date to find the best available trip."),
+          );
+          setRecommendationAction(
+            data.actionType
+              ? {
+                  type: data.actionType,
+                  params: data.actionParams ?? {},
+                }
+              : null,
+          );
+        }
+      } catch {
+        if (isActive) {
+          setRecommendation(t("Choose your route and travel date to find the best available trip."));
+          setRecommendationAction(null);
+        }
+      } finally {
+        if (isActive) {
+          setIsLoadingRecommendation(false);
+        }
+      }
+    }
+
+    loadRecommendation();
+
+    return () => {
+      isActive = false;
+    };
+  }, [language, authorizedGet, t, shouldShowRecommendation]);
 
   useEffect(() => {
     let isActive = true;
@@ -144,37 +229,71 @@ export function SearchTripsPage() {
     return station ? `${station.name} (${station.countryCode})` : "";
   }
 
-  async function handleSearch(event) {
-    event.preventDefault();
+  async function searchTrips(nextForm) {
     setError("");
     setTrips([]);
     setHasSearched(true);
 
-    if (!form.originStationId || !form.destinationStationId || !form.travelDate) {
-      setError("Origin, destination and travel date are required.");
+    if (!nextForm.originStationId || !nextForm.destinationStationId || !nextForm.travelDate) {
+      setError(t("Origin, destination and travel date are required."));
       return;
     }
 
-    if (form.originStationId === form.destinationStationId) {
-      setError("Origin and destination stations must be different.");
+    if (nextForm.originStationId === nextForm.destinationStationId) {
+      setError(t("Origin and destination stations must be different."));
       return;
     }
 
-    if (form.travelDate < todayInputValue) {
-      setError("Travel date cannot be in the past.");
+    if (nextForm.travelDate < todayInputValue) {
+      setError(t("Travel date cannot be in the past."));
       return;
     }
 
     setIsSearching(true);
 
     try {
-      const data = await authorizedGet(`/api/client/trips/search?${buildSearchParams(form)}`);
+      const data = await authorizedGet(`/api/client/trips/search?${buildSearchParams(nextForm)}`);
       setTrips(data);
     } catch (searchError) {
       setError(searchError.message);
     } finally {
       setIsSearching(false);
     }
+  }
+
+  async function handleSearch(event) {
+    event.preventDefault();
+    await searchTrips(form);
+  }
+
+  async function changeTravelDateBy(days) {
+    const travelDate = addDaysToDateInputValue(form.travelDate, days);
+    if (travelDate < todayInputValue) {
+      return;
+    }
+
+    const nextForm = { ...form, travelDate };
+    setForm(nextForm);
+    if (hasSearched && nextForm.originStationId && nextForm.destinationStationId) {
+      await searchTrips(nextForm);
+    }
+  }
+
+  async function applyRecommendationAction() {
+    if (recommendationAction?.type !== "trip_search") {
+      return;
+    }
+
+    const params = recommendationAction.params;
+    const nextForm = {
+      originStationId: params.originStationId ?? "",
+      destinationStationId: params.destinationStationId ?? "",
+      travelDate: params.travelDate ?? todayInputValue,
+    };
+    setForm(nextForm);
+    setOriginInput(params.originStationName ?? "");
+    setDestinationInput(params.destinationStationName ?? "");
+    await searchTrips(nextForm);
   }
 
   function openSeatSelection(trip) {
@@ -223,18 +342,82 @@ export function SearchTripsPage() {
                       color="primary.main"
                       sx={{ letterSpacing: "0.16em", fontWeight: 700 }}
                     >
-                      Tickets
+                      {t("Tickets")}
                     </Typography>
-                    <Typography variant="h4">Search trips</Typography>
+                    <Typography variant="h4">{t("Search trips")}</Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Choose your route and travel date, then select seats.
+                      {t("Choose your route and travel date, then select seats.")}
                     </Typography>
                   </Box>
                 </Stack>
-                <Chip color="primary" variant="outlined" label={user?.email ?? "Client"} />
+                <Chip color="primary" variant="outlined" label={user?.email ?? t("Client")} />
               </Stack>
             </CardContent>
           </Card>
+
+          {shouldShowRecommendation && (isLoadingRecommendation || recommendation) ? (
+            <Card
+              sx={{
+                bgcolor: "rgba(24,84,63,0.94)",
+                color: "common.white",
+                border: "1px solid rgba(255,255,255,0.20)",
+                boxShadow: "0 18px 44px rgba(24,84,63,0.22)",
+              }}
+            >
+              <CardContent sx={{ p: { xs: 2.5, md: 3 } }}>
+                <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ xs: "stretch", md: "flex-start" }}>
+                  <Box
+                    sx={{
+                      width: 46,
+                      height: 46,
+                      borderRadius: 2,
+                      display: "grid",
+                      placeItems: "center",
+                      bgcolor: "rgba(255,255,255,0.16)",
+                      flex: "0 0 auto",
+                    }}
+                  >
+                    {isLoadingRecommendation ? (
+                      <CircularProgress size={22} sx={{ color: "common.white" }} />
+                    ) : (
+                      <TipsAndUpdatesIcon />
+                    )}
+                  </Box>
+                  <Stack
+                    direction={{ xs: "column", md: "row" }}
+                    spacing={2}
+                    alignItems={{ xs: "stretch", md: "center" }}
+                    sx={{ flex: 1, minWidth: 0 }}
+                  >
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        flex: 1,
+                        minWidth: 0,
+                        fontWeight: 800,
+                        lineHeight: 1.35,
+                        whiteSpace: "normal",
+                        overflowWrap: "break-word",
+                      }}
+                    >
+                      {isLoadingRecommendation ? t("Preparing recommendation...") : recommendation}
+                    </Typography>
+                    {!isLoadingRecommendation && recommendationAction?.type === "trip_search" ? (
+                      <Button
+                        variant="contained"
+                        color="secondary"
+                        onClick={applyRecommendationAction}
+                        disabled={isSearching}
+                        sx={{ flex: "0 0 auto", whiteSpace: "nowrap" }}
+                      >
+                        {t("Search trips")}
+                      </Button>
+                    ) : null}
+                  </Stack>
+                </Stack>
+              </CardContent>
+            </Card>
+          ) : null}
 
           <Box
             sx={{
@@ -248,7 +431,7 @@ export function SearchTripsPage() {
               <CardContent sx={{ p: 3 }}>
                 <Stack spacing={3} component="form" onSubmit={handleSearch}>
                   <Box>
-                    <Typography variant="h5">Search details</Typography>
+                    <Typography variant="h5">{t("Search details")}</Typography>
                   </Box>
 
                   <Autocomplete
@@ -262,7 +445,7 @@ export function SearchTripsPage() {
                     disabled={isLoadingStations}
                     getOptionLabel={formatStationOption}
                     isOptionEqualToValue={(option, value) => String(option.id) === String(value.id)}
-                    noOptionsText="No matching stations"
+                    noOptionsText={t("No matching stations")}
                     onInputChange={(_, value, reason) => {
                       setOriginInput(value);
                       if (reason === "input" && selectedOriginStation && value !== formatStationOption(selectedOriginStation)) {
@@ -276,7 +459,7 @@ export function SearchTripsPage() {
                       updateForm({ originStationId: station ? String(station.id) : "" });
                     }}
                     renderInput={(params) => (
-                      <TextField {...params} label="Origin station" required fullWidth />
+                      <TextField {...params} label={t("Origin station")} required fullWidth />
                     )}
                   />
 
@@ -291,7 +474,7 @@ export function SearchTripsPage() {
                     disabled={isLoadingStations}
                     getOptionLabel={formatStationOption}
                     isOptionEqualToValue={(option, value) => String(option.id) === String(value.id)}
-                    noOptionsText="No matching stations"
+                    noOptionsText={t("No matching stations")}
                     onInputChange={(_, value, reason) => {
                       setDestinationInput(value);
                       if (
@@ -306,12 +489,12 @@ export function SearchTripsPage() {
                       updateForm({ destinationStationId: station ? String(station.id) : "" });
                     }}
                     renderInput={(params) => (
-                      <TextField {...params} label="Destination station" required fullWidth />
+                      <TextField {...params} label={t("Destination station")} required fullWidth />
                     )}
                   />
 
                   <TextField
-                    label="Travel date"
+                    label={t("Travel date")}
                     type="date"
                     value={form.travelDate}
                     onChange={(event) => updateForm({ travelDate: event.target.value })}
@@ -319,6 +502,29 @@ export function SearchTripsPage() {
                     required
                     fullWidth
                   />
+
+                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                    <Button
+                      type="button"
+                      variant="outlined"
+                      startIcon={<ChevronLeftIcon />}
+                      onClick={() => changeTravelDateBy(-1)}
+                      disabled={isSearching || form.travelDate <= todayInputValue}
+                      sx={{ flex: 1 }}
+                    >
+                      {t("Previous day")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outlined"
+                      endIcon={<ChevronRightIcon />}
+                      onClick={() => changeTravelDateBy(1)}
+                      disabled={isSearching}
+                      sx={{ flex: 1 }}
+                    >
+                      {t("Next day")}
+                    </Button>
+                  </Stack>
 
                   {error ? <Alert severity="error">{error}</Alert> : null}
 
@@ -329,7 +535,7 @@ export function SearchTripsPage() {
                     startIcon={<SearchIcon />}
                     disabled={isLoadingStations || isSearching}
                   >
-                    {isSearching ? "Searching..." : "Search trips"}
+                    {isSearching ? t("Searching...") : t("Search trips")}
                   </Button>
                 </Stack>
               </CardContent>
@@ -339,24 +545,24 @@ export function SearchTripsPage() {
               <CardContent sx={{ p: 3 }}>
                 <Stack spacing={2.5}>
                   <Box>
-                    <Typography variant="h5">Available trips</Typography>
+                    <Typography variant="h5">{t("Available trips")}</Typography>
                   </Box>
 
                   {isSearching ? (
                     <Box sx={{ py: 8, display: "grid", placeItems: "center" }}>
                       <Stack spacing={2} alignItems="center">
                         <CircularProgress />
-                        <Typography color="text.secondary">Searching trips...</Typography>
+                        <Typography color="text.secondary">{t("Searching trips...")}</Typography>
                       </Stack>
                     </Box>
                   ) : null}
 
                   {!isSearching && hasSearched && trips.length === 0 ? (
-                    <Alert severity="info">No trips found for this route and date.</Alert>
+                    <Alert severity="info">{t("No trips found for this route and date.")}</Alert>
                   ) : null}
 
                   {!isSearching && !hasSearched ? (
-                    <Alert severity="info">Choose stations and date to start searching.</Alert>
+                    <Alert severity="info">{t("Choose stations and date to start searching.")}</Alert>
                   ) : null}
 
                   {!isSearching && trips.length > 0 ? (
@@ -387,7 +593,7 @@ export function SearchTripsPage() {
                                   </Box>
                                   <Box>
                                     <Typography variant="h6">
-                                      {trip.trainNumber} - {trip.trainName || "Train"}
+                                      {trip.trainNumber} - {trip.trainName || t("Train")}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
                                       {trip.routeNumber} - {trip.routeName}
@@ -411,17 +617,17 @@ export function SearchTripsPage() {
                               >
                                 <Box>
                                   <Typography variant="caption" color="text.secondary">
-                                    Departure
+                                    {t("Departure")}
                                   </Typography>
                                   <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                                     {trip.departureStationName}
                                   </Typography>
                                   <Typography variant="body2">{formatDateTime(trip.departureAtUtc)}</Typography>
                                 </Box>
-                                <Chip variant="outlined" label={formatDuration(trip.departureAtUtc, trip.arrivalAtUtc)} />
+                                <Chip variant="outlined" label={formatDuration(trip.departureAtUtc, trip.arrivalAtUtc, t)} />
                                 <Box sx={{ textAlign: { xs: "left", md: "right" } }}>
                                   <Typography variant="caption" color="text.secondary">
-                                    Arrival
+                                    {t("Arrival")}
                                   </Typography>
                                   <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                                     {trip.arrivalStationName}
@@ -431,7 +637,7 @@ export function SearchTripsPage() {
                               </Box>
 
                               <Button variant="contained" onClick={() => openSeatSelection(trip)}>
-                                Select seats
+                                {t("Select seats")}
                               </Button>
                             </Stack>
                           </CardContent>

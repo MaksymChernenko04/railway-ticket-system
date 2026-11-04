@@ -1,9 +1,11 @@
 import { Box, CircularProgress, Typography } from "@mui/material";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
 export function ProtectedRoute({ children, requiredRole, forbiddenRole }) {
   const { isBootstrapping, isAuthenticated, user } = useAuth();
+  const { t } = useI18n();
   const location = useLocation();
 
   if (isBootstrapping) {
@@ -19,7 +21,7 @@ export function ProtectedRoute({ children, requiredRole, forbiddenRole }) {
       >
         <Box sx={{ display: "grid", gap: 2, justifyItems: "center" }}>
           <CircularProgress />
-          <Typography color="text.secondary">Loading session...</Typography>
+          <Typography color="text.secondary">{t("Loading session...")}</Typography>
         </Box>
       </Box>
     );

@@ -26,6 +26,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { nextSortState, SortableTableCell, sortRows } from "../components/SortableTableCell.jsx";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
 const emptyForm = {
     typeCode: "",
@@ -35,6 +36,7 @@ const emptyForm = {
 
 export function AdminTrainsPage() {
     const { authorizedGet, authorizedPost, authorizedDelete, user } = useAuth();
+    const { codeLabel, t } = useI18n();
     const [trainsPage, setTrainsPage] = useState(null);
     const [trainTypes, setTrainTypes] = useState([]);
     const [form, setForm] = useState(emptyForm);
@@ -88,7 +90,7 @@ export function AdminTrainsPage() {
             await authorizedPost("/api/admin/trains", {
                 ...form,
             });
-            setFeedback("Train created.");
+            setFeedback(t("Train created."));
             setForm(emptyForm);
             await loadTrains(0);
         } catch (submitError) {
@@ -99,7 +101,7 @@ export function AdminTrainsPage() {
     }
 
     async function deleteTrain(id) {
-        if (!globalThis.confirm("Are you sure you want to delete this train?")) {
+        if (!globalThis.confirm(t("Are you sure you want to delete this train?"))) {
             return;
         }
 
@@ -108,7 +110,7 @@ export function AdminTrainsPage() {
 
         try {
             await authorizedDelete(`/api/admin/trains/${id}`);
-            setFeedback("Train deleted.");
+            setFeedback(t("Train deleted."));
 
             const isLastItemOnPage = trainsPage?.content?.length === 1;
             const nextPageIndex = (isLastItemOnPage && pageIndex > 0) ? pageIndex - 1 : pageIndex;
@@ -162,11 +164,14 @@ export function AdminTrainsPage() {
                                             color="primary.main"
                                             sx={{ letterSpacing: "0.16em", fontWeight: 700 }}
                                         >
-                                            Admin panel
+                                            {t("Admin panel")}
                                         </Typography>
-                                        <Typography variant="h4">Trains management</Typography>
+                                        <Typography variant="h4">{t("Trains management")}</Typography>
                                         <Typography variant="body2" color="text.secondary">
-                                            Logged in as {user?.firstName} {user?.lastName} ({user?.email})
+                                            {t("Logged in as {name} ({email})", {
+                                                name: [user?.firstName, user?.lastName].filter(Boolean).join(" "),
+                                                email: user?.email,
+                                            })}
                                         </Typography>
                                     </Box>
                                 </Stack>
@@ -186,30 +191,30 @@ export function AdminTrainsPage() {
                             <CardContent sx={{ p: 3 }}>
                                 <Stack spacing={3} component="form" onSubmit={handleSubmit}>
                                     <Box>
-                                        <Typography variant="h5">Create train</Typography>
+                                        <Typography variant="h5">{t("Create train")}</Typography>
                                         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                                            Register a train number, type, and display name.
+                                            {t("Register a train number, type, and display name.")}
                                         </Typography>
                                     </Box>
 
                                     <FormControl fullWidth required>
-                                        <InputLabel id="train-type-label">Type</InputLabel>
+                                        <InputLabel id="train-type-label">{t("Type")}</InputLabel>
                                         <Select
                                             labelId="train-type-label"
-                                            label="Type"
+                                            label={t("Type")}
                                             value={form.typeCode}
                                             onChange={(event) => setForm({ ...form, typeCode: event.target.value })}
                                         >
                                             {trainTypes.map((type) => (
                                                 <MenuItem key={type.code} value={type.code}>
-                                                    {type.code} x{type.priceMultiplier}
+                                                    {codeLabel("trainType", type.code)} x{type.priceMultiplier}
                                                 </MenuItem>
                                             ))}
                                         </Select>
                                     </FormControl>
 
                                     <TextField
-                                        label="Number"
+                                        label={t("Number")}
                                         value={form.number}
                                         onChange={(event) => setForm({ ...form, number: event.target.value })}
                                         slotProps={{
@@ -220,7 +225,7 @@ export function AdminTrainsPage() {
                                     />
 
                                     <TextField
-                                        label="Name"
+                                        label={t("Name")}
                                         value={form.name}
                                         onChange={(event) => setForm({ ...form, name: event.target.value })}
                                         slotProps={{
@@ -233,7 +238,7 @@ export function AdminTrainsPage() {
                                     {error ? <Alert severity="error">{error}</Alert> : null}
 
                                     <Button type="submit" variant="contained" size="large" disabled={isSubmitting}>
-                                        {isSubmitting ? "Saving..." : "Create train"}
+                                        {isSubmitting ? t("Saving...") : t("Create train")}
                                     </Button>
                                 </Stack>
                             </CardContent>
@@ -249,14 +254,14 @@ export function AdminTrainsPage() {
                                         spacing={2}
                                     >
                                         <Box>
-                                            <Typography variant="h5">Existing trains</Typography>
+                                            <Typography variant="h5">{t("Existing trains")}</Typography>
                                         </Box>
                                         <Button
                                             variant="outlined"
                                             startIcon={<RefreshIcon />}
                                             onClick={() => loadTrains(pageIndex)}
                                         >
-                                            Refresh
+                                            {t("Refresh")}
                                         </Button>
                                     </Stack>
 
@@ -266,7 +271,7 @@ export function AdminTrainsPage() {
                                         <Box sx={{ py: 8, display: "grid", placeItems: "center" }}>
                                             <Stack spacing={2} alignItems="center">
                                                 <CircularProgress />
-                                                <Typography color="text.secondary">Loading trains...</Typography>
+                                                <Typography color="text.secondary">{t("Loading trains...")}</Typography>
                                             </Stack>
                                         </Box>
                                     ) : null}
@@ -277,17 +282,17 @@ export function AdminTrainsPage() {
                                                 <Table>
                                                     <TableHead>
                                                         <TableRow>
-                                                            <SortableTableCell sort={sort} field="number" onSort={handleSort}>Number</SortableTableCell>
-                                                            <SortableTableCell sort={sort} field="typeCode" onSort={handleSort}>Type</SortableTableCell>
-                                                            <SortableTableCell sort={sort} field="name" onSort={handleSort}>Name</SortableTableCell>
-                                                            <TableCell>Action</TableCell>
+                                                            <SortableTableCell sort={sort} field="number" onSort={handleSort}>{t("Number")}</SortableTableCell>
+                                                            <SortableTableCell sort={sort} field="typeCode" onSort={handleSort}>{t("Type")}</SortableTableCell>
+                                                            <SortableTableCell sort={sort} field="name" onSort={handleSort}>{t("Name")}</SortableTableCell>
+                                                            <TableCell>{t("Action")}</TableCell>
                                                         </TableRow>
                                                     </TableHead>
                                                     <TableBody>
                                                         {sortedTrains.map((train) => (
                                                             <TableRow key={train.id} hover>
                                                                 <TableCell>{train.number}</TableCell>
-                                                                <TableCell>{train.typeCode}</TableCell>
+                                                                <TableCell>{codeLabel("trainType", train.typeCode)}</TableCell>
                                                                 <TableCell>{train.name}</TableCell>
                                                                 <TableCell>
                                                                     <Button
@@ -295,7 +300,7 @@ export function AdminTrainsPage() {
                                                                         color="error"
                                                                         onClick={() => {deleteTrain(train.id)}}
                                                                     >
-                                                                        Delete
+                                                                        {t("Delete")}
                                                                     </Button>
                                                                 </TableCell>
                                                             </TableRow>
@@ -315,24 +320,24 @@ export function AdminTrainsPage() {
                                                     onClick={() => loadTrains(pageIndex - 1)}
                                                     disabled={trainsPage.first}
                                                 >
-                                                    Previous
+                                                    {t("Previous")}
                                                 </Button>
                                                 <Typography variant="body2" color="text.secondary">
-                                                    Page {trainsPage.number + 1} of {trainsPage.totalPages || 1}
+                                                    {t("Page {current} of {total}", { current: trainsPage.number + 1, total: trainsPage.totalPages || 1 })}
                                                 </Typography>
                                                 <Button
                                                     variant="outlined"
                                                     onClick={() => loadTrains(pageIndex + 1)}
                                                     disabled={trainsPage.last}
                                                 >
-                                                    Next
+                                                    {t("Next")}
                                                 </Button>
                                             </Stack>
                                         </>
                                     ) : null}
 
                                     {!isLoading && !trainsPage?.content?.length ? (
-                                        <Alert severity="info">No trains found yet.</Alert>
+                                        <Alert severity="info">{t("No trains found yet.")}</Alert>
                                     ) : null}
                                 </Stack>
                             </CardContent>

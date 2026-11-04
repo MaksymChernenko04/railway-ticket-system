@@ -10,9 +10,11 @@ import {
 } from "@mui/material";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
 export function WelcomePage() {
   const { isAuthenticated, user } = useAuth();
+  const { codeLabel, t } = useI18n();
     useNavigate();
 
     if (!isAuthenticated) {
@@ -48,7 +50,7 @@ export function WelcomePage() {
                                 >
                                     <CelebrationIcon fontSize="large" />
                                 </Box>
-                                <Chip color="primary" label={user?.role || "USER"} />
+                                <Chip color="primary" label={codeLabel("role", user?.role || "USER")} />
                             </Stack>
 
                             <Box>
@@ -57,15 +59,15 @@ export function WelcomePage() {
                                     color="secondary.main"
                                     sx={{ letterSpacing: "0.16em", fontWeight: 700 }}
                                 >
-                                    Welcome
+                                    {t("Welcome")}
                                 </Typography>
                                 <Typography variant="h1" sx={{ mt: 1, fontSize: { xs: "2.8rem", md: "4.2rem" }, maxWidth: 820 }}>
-                                    Welcome back, {user?.firstName || user?.email}.
+                                    {t("Welcome, {name}.", { name: user?.firstName || user?.email })}
                                 </Typography>
                             </Box>
 
                             <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 760, fontWeight: 400 }}>
-                                Your account is ready. Use the navigation bar to continue.
+                                {t("Your account is ready. Use the navigation bar to continue.")}
                             </Typography>
                         </Stack>
                     </CardContent>

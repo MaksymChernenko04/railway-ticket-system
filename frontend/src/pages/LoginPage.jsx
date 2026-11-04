@@ -15,9 +15,11 @@ import {
 import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
 export function LoginPage() {
   const { isAuthenticated, login, user } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const [form, setForm] = useState({ email: "", password: "" });
@@ -87,14 +89,14 @@ export function LoginPage() {
                     color="primary.main"
                     sx={{ letterSpacing: "0.16em", fontWeight: 700 }}
                   >
-                    Sign in
+                    {t("Sign in")}
                   </Typography>
                   <Typography variant="h2" sx={{ mt: 1, maxWidth: 500 }}>
-                    Sign in to continue your railway journey.
+                    {t("Sign in to continue your railway journey.")}
                   </Typography>
                 </Box>
                 <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 500 }}>
-                  Use your email and password to open your account and manage your trips.
+                  {t("Use your email and password to open your account and manage your trips.")}
                 </Typography>
               </Stack>
             </CardContent>
@@ -104,14 +106,14 @@ export function LoginPage() {
             <CardContent sx={{ p: { xs: 3, md: 4.5 }, minHeight: "100%" }}>
               <Stack spacing={3} component="form" onSubmit={handleSubmit}>
                 <Box>
-                  <Typography variant="h4">Login</Typography>
+                  <Typography variant="h4">{t("Login")}</Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                    Enter the email address and password you used when creating your account.
+                    {t("Enter the email address and password you used when creating your account.")}
                   </Typography>
                 </Box>
 
                 <TextField
-                  label="Email"
+                  label={t("Email")}
                   type="email"
                   value={form.email}
                   onChange={(event) => setForm({ ...form, email: event.target.value })}
@@ -120,7 +122,7 @@ export function LoginPage() {
                 />
 
                 <TextField
-                  label="Password"
+                  label={t("Password")}
                   type="password"
                   value={form.password}
                   onChange={(event) => setForm({ ...form, password: event.target.value })}
@@ -137,13 +139,13 @@ export function LoginPage() {
                   startIcon={<LoginIcon />}
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Signing in..." : "Sign in"}
+                  {isSubmitting ? t("Signing in...") : t("Sign in")}
                 </Button>
 
                 <Typography variant="body2" color="text.secondary">
-                  Need an account?{" "}
+                  {t("Need an account?")}{" "}
                   <MuiLink component={Link} to="/register" underline="hover">
-                    Create one
+                    {t("Create one")}
                   </MuiLink>
                 </Typography>
               </Stack>

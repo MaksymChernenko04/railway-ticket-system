@@ -18,6 +18,7 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
 function formatMoney(amount, currencyCode) {
   const value = Number(amount ?? 0);
@@ -38,6 +39,7 @@ export function PaymentPage() {
   const { paymentId } = useParams();
   const navigate = useNavigate();
   const { authorizedGet, authorizedPost } = useAuth();
+  const { codeLabel, t } = useI18n();
   const [payment, setPayment] = useState(null);
   const [order, setOrder] = useState(null);
   const [cardNumber, setCardNumber] = useState("");
@@ -147,11 +149,11 @@ export function PaymentPage() {
                 </Box>
                 <Box sx={{ flexGrow: 1 }}>
                   <Typography variant="overline" color="primary.main" sx={{ letterSpacing: "0.16em", fontWeight: 700 }}>
-                    Secure payment
+                    {t("Secure payment")}
                   </Typography>
-                  <Typography variant="h4">Complete your payment</Typography>
+                  <Typography variant="h4">{t("Complete your payment")}</Typography>
                 </Box>
-                {currentStatus ? <Chip color={statusColor(currentStatus)} label={currentStatus} /> : null}
+                {currentStatus ? <Chip color={statusColor(currentStatus)} label={codeLabel("status", currentStatus)} /> : null}
               </Stack>
             </CardContent>
           </Card>
@@ -163,7 +165,7 @@ export function PaymentPage() {
               <CardContent sx={{ py: 8, display: "grid", placeItems: "center" }}>
                 <Stack spacing={2} alignItems="center">
                   <CircularProgress />
-                  <Typography color="text.secondary">Loading payment...</Typography>
+                  <Typography color="text.secondary">{t("Loading payment...")}</Typography>
                 </Stack>
               </CardContent>
             </Card>
@@ -177,7 +179,7 @@ export function PaymentPage() {
                     <PaymentIcon color="primary" />
                     <Box>
                       <Typography variant="body2" color="text.secondary">
-                        Amount
+                        {t("Amount")}
                       </Typography>
                       <Typography variant="h4">{formatMoney(payment.amount, payment.currencyCode)}</Typography>
                     </Box>
@@ -187,45 +189,45 @@ export function PaymentPage() {
 
                   <Box>
                     <Typography variant="body2" color="text.secondary">
-                      Payment method
+                      {t("Payment method")}
                     </Typography>
-                    <Typography variant="h6">{payment.method}</Typography>
+                    <Typography variant="h6">{codeLabel("paymentMethod", payment.method)}</Typography>
                   </Box>
 
                   {canPay ? (
                     <>
                       <TextField
-                        label="Card number"
+                        label={t("Card number")}
                         value={cardNumber}
                         onChange={(event) => setCardNumber(event.target.value)}
                         placeholder="4242 4242 4242 4242"
                         fullWidth
                       />
                       <TextField
-                        label="Cardholder name"
+                        label={t("Cardholder name")}
                         value={cardHolder}
                         onChange={(event) => setCardHolder(event.target.value)}
-                        placeholder="Name on card"
+                        placeholder={t("Name on card")}
                         fullWidth
                       />
                       <Button type="submit" variant="contained" size="large" startIcon={<CreditCardIcon />} disabled={isPaying}>
-                        {isPaying ? "Processing..." : "Pay"}
+                        {isPaying ? t("Processing...") : t("Pay")}
                       </Button>
                     </>
                   ) : null}
 
                   {order?.status === "PAID" ? (
                     <Stack spacing={2}>
-                      <Alert severity="success">Payment completed. Your tickets are confirmed.</Alert>
+                      <Alert severity="success">{t("Payment completed. Your tickets are confirmed.")}</Alert>
                       <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
                         <Button variant="contained" onClick={() => navigate("/tickets")}>
-                          View tickets
+                          {t("View tickets")}
                         </Button>
                         <Button variant="outlined" onClick={() => navigate("/orders")}>
-                          View orders
+                          {t("View orders")}
                         </Button>
                         <Button variant="outlined" onClick={() => navigate("/trips/search")}>
-                          Back to search
+                          {t("Back to search")}
                         </Button>
                       </Stack>
                     </Stack>
@@ -233,9 +235,9 @@ export function PaymentPage() {
 
                   {payment.status === "FAILED" ? (
                     <Stack spacing={2}>
-                      <Alert severity="warning">The payment was not completed. You can try again while the order is active.</Alert>
+                      <Alert severity="warning">{t("The payment was not completed. You can try again while the order is active.")}</Alert>
                       <Button variant="contained" onClick={retryPayment} disabled={isRetrying}>
-                        {isRetrying ? "Opening payment..." : "Try again"}
+                        {isRetrying ? t("Opening payment...") : t("Try again")}
                       </Button>
                     </Stack>
                   ) : null}

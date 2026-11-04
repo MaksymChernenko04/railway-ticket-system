@@ -26,6 +26,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { nextSortState, SortableTableCell, sortRows } from "../components/SortableTableCell.jsx";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
 const emptyForm = {
   routeId: "",
@@ -35,6 +36,7 @@ const emptyForm = {
 
 export function AdminRouteStopsPage() {
   const { authorizedGet, authorizedPost, authorizedDelete, user } = useAuth();
+  const { t } = useI18n();
   const [routeStopsPage, setRouteStopsPage] = useState(null);
   const [routes, setRoutes] = useState([]);
   const [stations, setStations] = useState([]);
@@ -119,7 +121,7 @@ export function AdminRouteStopsPage() {
         stationId: Number(form.stationId),
         ordinal: Number(form.ordinal),
       });
-      setFeedback("Route stop added.");
+      setFeedback(t("Route stop added."));
       setForm({ routeId: form.routeId, stationId: "", ordinal: "" });
       setSelectedRouteId(form.routeId);
       await loadRouteStops(0, form.routeId);
@@ -131,7 +133,7 @@ export function AdminRouteStopsPage() {
   }
 
   async function deleteRouteStop(id) {
-    if (!globalThis.confirm("Are you sure you want to delete this route stop?")) {
+    if (!globalThis.confirm(t("Are you sure you want to delete this route stop?"))) {
       return;
     }
 
@@ -140,7 +142,7 @@ export function AdminRouteStopsPage() {
 
     try {
       await authorizedDelete(`/api/admin/route-stops/${id}`);
-      setFeedback("Route stop deleted.");
+      setFeedback(t("Route stop deleted."));
 
       const isLastItemOnPage = routeStopsPage?.content?.length === 1;
       const nextPageIndex = (isLastItemOnPage && pageIndex > 0) ? pageIndex - 1 : pageIndex;
@@ -188,11 +190,14 @@ export function AdminRouteStopsPage() {
                     color="primary.main"
                     sx={{ letterSpacing: "0.16em", fontWeight: 700 }}
                   >
-                    Admin panel
+                    {t("Admin panel")}
                   </Typography>
-                  <Typography variant="h4">Route stops management</Typography>
+                  <Typography variant="h4">{t("Route stops management")}</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Logged in as {user?.firstName} {user?.lastName} ({user?.email})
+                    {t("Logged in as {name} ({email})", {
+                      name: `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim(),
+                      email: user?.email,
+                    })}
                   </Typography>
                 </Box>
               </Stack>
@@ -211,17 +216,17 @@ export function AdminRouteStopsPage() {
               <CardContent sx={{ p: 3 }}>
                 <Stack spacing={3} component="form" onSubmit={handleSubmit}>
                   <Box>
-                    <Typography variant="h5">Add stop to route</Typography>
+                    <Typography variant="h5">{t("Add stop to route")}</Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                      Builds the route scheme by assigning stations to ordered positions.
+                      {t("Builds the route scheme by assigning stations to ordered positions.")}
                     </Typography>
                   </Box>
 
                   <FormControl fullWidth required>
-                    <InputLabel id="route-stop-route-label">Route</InputLabel>
+                    <InputLabel id="route-stop-route-label">{t("Route")}</InputLabel>
                     <Select
                       labelId="route-stop-route-label"
-                      label="Route"
+                      label={t("Route")}
                       value={form.routeId}
                       onChange={(event) => setForm({ ...form, routeId: event.target.value })}
                     >
@@ -234,10 +239,10 @@ export function AdminRouteStopsPage() {
                   </FormControl>
 
                   <FormControl fullWidth required>
-                    <InputLabel id="route-stop-station-label">Station</InputLabel>
+                    <InputLabel id="route-stop-station-label">{t("Station")}</InputLabel>
                     <Select
                       labelId="route-stop-station-label"
-                      label="Station"
+                      label={t("Station")}
                       value={form.stationId}
                       onChange={(event) => setForm({ ...form, stationId: event.target.value })}
                     >
@@ -250,7 +255,7 @@ export function AdminRouteStopsPage() {
                   </FormControl>
 
                   <TextField
-                    label="Ordinal"
+                    label={t("Ordinal")}
                     type="number"
                     value={form.ordinal}
                     onChange={(event) => setForm({ ...form, ordinal: event.target.value })}
@@ -264,7 +269,7 @@ export function AdminRouteStopsPage() {
                   {error ? <Alert severity="error">{error}</Alert> : null}
 
                   <Button type="submit" variant="contained" size="large" disabled={isSubmitting}>
-                    {isSubmitting ? "Saving..." : "Add route stop"}
+                    {isSubmitting ? t("Saving...") : t("Add route stop")}
                   </Button>
                 </Stack>
               </CardContent>
@@ -280,21 +285,21 @@ export function AdminRouteStopsPage() {
                     spacing={2}
                   >
                     <Box>
-                      <Typography variant="h5">Route scheme</Typography>
+                      <Typography variant="h5">{t("Route scheme")}</Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {selectedRoute ? `${selectedRoute.number} - ${selectedRoute.name}` : "All routes"}
+                        {selectedRoute ? `${selectedRoute.number} - ${selectedRoute.name}` : t("All routes")}
                       </Typography>
                     </Box>
                     <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ width: { xs: "100%", sm: "auto" } }}>
                       <FormControl size="small" sx={{ minWidth: 220 }}>
-                        <InputLabel id="route-stop-filter-label">Route</InputLabel>
+                        <InputLabel id="route-stop-filter-label">{t("Route")}</InputLabel>
                         <Select
                           labelId="route-stop-filter-label"
-                          label="Route"
+                          label={t("Route")}
                           value={selectedRouteId}
                           onChange={(event) => handleRouteFilterChange(event.target.value)}
                         >
-                          <MenuItem value="">All routes</MenuItem>
+                          <MenuItem value="">{t("All routes")}</MenuItem>
                           {routes.map((route) => (
                             <MenuItem key={route.id} value={String(route.id)}>
                               {route.number} - {route.name}
@@ -307,7 +312,7 @@ export function AdminRouteStopsPage() {
                         startIcon={<RefreshIcon />}
                         onClick={() => loadRouteStops(pageIndex)}
                       >
-                        Refresh
+                        {t("Refresh")}
                       </Button>
                     </Stack>
                   </Stack>
@@ -318,7 +323,7 @@ export function AdminRouteStopsPage() {
                     <Box sx={{ py: 8, display: "grid", placeItems: "center" }}>
                       <Stack spacing={2} alignItems="center">
                         <CircularProgress />
-                        <Typography color="text.secondary">Loading route stops...</Typography>
+                        <Typography color="text.secondary">{t("Loading route stops...")}</Typography>
                       </Stack>
                     </Box>
                   ) : null}
@@ -329,11 +334,11 @@ export function AdminRouteStopsPage() {
                         <Table>
                           <TableHead>
                             <TableRow>
-                              <SortableTableCell sort={sort} field="ordinal" onSort={handleSort}>Ordinal</SortableTableCell>
-                              <SortableTableCell sort={sort} field="routeNumber" onSort={handleSort}>Route</SortableTableCell>
-                              <SortableTableCell sort={sort} field="stationName" onSort={handleSort}>Station</SortableTableCell>
-                              <SortableTableCell sort={sort} field="stationCountryCode" onSort={handleSort}>Country</SortableTableCell>
-                              <TableCell>Action</TableCell>
+                              <SortableTableCell sort={sort} field="ordinal" onSort={handleSort}>{t("Ordinal")}</SortableTableCell>
+                              <SortableTableCell sort={sort} field="routeNumber" onSort={handleSort}>{t("Route")}</SortableTableCell>
+                              <SortableTableCell sort={sort} field="stationName" onSort={handleSort}>{t("Station")}</SortableTableCell>
+                              <SortableTableCell sort={sort} field="stationCountryCode" onSort={handleSort}>{t("Country")}</SortableTableCell>
+                              <TableCell>{t("Action")}</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
@@ -349,7 +354,7 @@ export function AdminRouteStopsPage() {
                                     color="error"
                                     onClick={() => { deleteRouteStop(routeStop.id); }}
                                   >
-                                    Delete
+                                    {t("Delete")}
                                   </Button>
                                 </TableCell>
                               </TableRow>
@@ -369,24 +374,27 @@ export function AdminRouteStopsPage() {
                           onClick={() => loadRouteStops(pageIndex - 1)}
                           disabled={routeStopsPage.first}
                         >
-                          Previous
+                          {t("Previous")}
                         </Button>
                         <Typography variant="body2" color="text.secondary">
-                          Page {routeStopsPage.number + 1} of {routeStopsPage.totalPages || 1}
+                          {t("Page {current} of {total}", {
+                            current: routeStopsPage.number + 1,
+                            total: routeStopsPage.totalPages || 1,
+                          })}
                         </Typography>
                         <Button
                           variant="outlined"
                           onClick={() => loadRouteStops(pageIndex + 1)}
                           disabled={routeStopsPage.last}
                         >
-                          Next
+                          {t("Next")}
                         </Button>
                       </Stack>
                     </>
                   ) : null}
 
                   {!isLoading && !routeStopsPage?.content?.length ? (
-                    <Alert severity="info">No route stops found yet.</Alert>
+                    <Alert severity="info">{t("No route stops found yet.")}</Alert>
                   ) : null}
                 </Stack>
               </CardContent>

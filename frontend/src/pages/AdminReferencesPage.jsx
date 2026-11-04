@@ -24,6 +24,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { nextSortState, SortableTableCell, sortRows } from "../components/SortableTableCell.jsx";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
 const referenceTypes = [
   { type: "train-types", label: "Train types", valueField: "priceMultiplier", valueLabel: "Price multiplier" },
@@ -34,6 +35,13 @@ const referenceTypes = [
   { type: "benefits", label: "Benefits", valueField: "percentAmount", valueLabel: "Percent amount" },
 ];
 
+const referenceCodeGroups = {
+  "train-types": "trainType",
+  "car-types": "carType",
+  "seat-types": "seatType",
+  benefits: "benefit",
+};
+
 const emptyForm = {
   code: "",
   value: "",
@@ -41,6 +49,7 @@ const emptyForm = {
 
 export function AdminReferencesPage() {
   const { authorizedGet, authorizedPost, authorizedDelete, user } = useAuth();
+  const { t, codeLabel } = useI18n();
   const [activeType, setActiveType] = useState(referenceTypes[0].type);
   const [referencesPage, setReferencesPage] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -103,7 +112,7 @@ export function AdminReferencesPage() {
 
     try {
       await authorizedPost(`/api/admin/references/${activeType}`, payload);
-      setFeedback(`${config.label.slice(0, -1) || config.label} created.`);
+      setFeedback(t("Reference created."));
       setForm(emptyForm);
       await loadReferences(0, activeType);
     } catch (submitError) {
@@ -114,7 +123,7 @@ export function AdminReferencesPage() {
   }
 
   async function deleteReference(code) {
-    if (!globalThis.confirm(`Are you sure you want to delete ${code}?`)) {
+    if (!globalThis.confirm(t("Are you sure you want to delete {code}?", { code: formatReferenceCode(code) }))) {
       return;
     }
 
@@ -123,7 +132,7 @@ export function AdminReferencesPage() {
 
     try {
       await authorizedDelete(`/api/admin/references/${activeType}/${encodeURIComponent(code)}`);
-      setFeedback("Reference deleted.");
+      setFeedback(t("Reference deleted."));
 
       const isLastItemOnPage = referencesPage?.content?.length === 1;
       const nextPageIndex = (isLastItemOnPage && pageIndex > 0) ? pageIndex - 1 : pageIndex;
@@ -140,6 +149,11 @@ export function AdminReferencesPage() {
     }
 
     return reference[config.valueField];
+  }
+
+  function formatReferenceCode(code) {
+    const group = referenceCodeGroups[activeType];
+    return group ? codeLabel(group, code) : code;
   }
 
   function handleSort(field) {
@@ -179,11 +193,14 @@ export function AdminReferencesPage() {
                     color="primary.main"
                     sx={{ letterSpacing: "0.16em", fontWeight: 700 }}
                   >
-                    Admin panel
+                    {t("Admin panel")}
                   </Typography>
-                  <Typography variant="h4">References management</Typography>
+                  <Typography variant="h4">{t("References management")}</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Logged in as {user?.firstName} {user?.lastName} ({user?.email})
+                    {t("Logged in as {name} ({email})", {
+                      name: `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim(),
+                      email: user?.email,
+                    })}
                   </Typography>
                 </Box>
               </Stack>
@@ -200,7 +217,7 @@ export function AdminReferencesPage() {
                 sx={{ px: 2, borderBottom: 1, borderColor: "divider" }}
               >
                 {referenceTypes.map((referenceType) => (
-                  <Tab key={referenceType.type} value={referenceType.type} label={referenceType.label} />
+                  <Tab key={referenceType.type} value={referenceType.type} label={t(referenceType.label)} />
                 ))}
               </Tabs>
             </CardContent>
@@ -218,14 +235,16 @@ export function AdminReferencesPage() {
               <CardContent sx={{ p: 3 }}>
                 <Stack spacing={3} component="form" onSubmit={handleSubmit}>
                   <Box>
-                    <Typography variant="h5">Create {config.label.toLowerCase()}</Typography>
+                    <Typography variant="h5">
+                      {t("Create {label}", { label: t(config.label).toLowerCase() })}
+                    </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                      Adds a new record to the selected reference table.
+                      {t("Adds a new record to the selected reference table.")}
                     </Typography>
                   </Box>
 
                   <TextField
-                    label="Code"
+                    label={t("Code")}
                     value={form.code}
                     onChange={(event) => setForm({ ...form, code: event.target.value })}
                     slotProps={{
@@ -237,7 +256,7 @@ export function AdminReferencesPage() {
 
                   {config.valueField ? (
                     <TextField
-                      label={config.valueLabel}
+                      label={t(config.valueLabel)}
                       value={form.value}
                       onChange={(event) => {
                         let value = event.target.value.replace(",", ".");
@@ -256,7 +275,7 @@ export function AdminReferencesPage() {
                   {error ? <Alert severity="error">{error}</Alert> : null}
 
                   <Button type="submit" variant="contained" size="large" disabled={isSubmitting}>
-                    {isSubmitting ? "Saving..." : "Create reference"}
+                    {isSubmitting ? t("Saving...") : t("Create reference")}
                   </Button>
                 </Stack>
               </CardContent>
@@ -272,14 +291,16 @@ export function AdminReferencesPage() {
                     spacing={2}
                   >
                     <Box>
-                      <Typography variant="h5">Existing {config.label.toLowerCase()}</Typography>
+                      <Typography variant="h5">
+                        {t("Existing {label}", { label: t(config.label).toLowerCase() })}
+                      </Typography>
                     </Box>
                     <Button
                       variant="outlined"
                       startIcon={<RefreshIcon />}
                       onClick={() => loadReferences(pageIndex, activeType)}
                     >
-                      Refresh
+                      {t("Refresh")}
                     </Button>
                   </Stack>
 
@@ -289,7 +310,7 @@ export function AdminReferencesPage() {
                     <Box sx={{ py: 8, display: "grid", placeItems: "center" }}>
                       <Stack spacing={2} alignItems="center">
                         <CircularProgress />
-                        <Typography color="text.secondary">Loading references...</Typography>
+                        <Typography color="text.secondary">{t("Loading references...")}</Typography>
                       </Stack>
                     </Box>
                   ) : null}
@@ -300,19 +321,19 @@ export function AdminReferencesPage() {
                         <Table>
                           <TableHead>
                             <TableRow>
-                              <SortableTableCell sort={sort} field="code" onSort={handleSort}>Code</SortableTableCell>
+                              <SortableTableCell sort={sort} field="code" onSort={handleSort}>{t("Code")}</SortableTableCell>
                               {config.valueField ? (
                                 <SortableTableCell sort={sort} field={config.valueField} onSort={handleSort}>
-                                  {config.valueLabel}
+                                  {t(config.valueLabel)}
                                 </SortableTableCell>
                               ) : null}
-                              <TableCell>Action</TableCell>
+                              <TableCell>{t("Action")}</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
                             {sortedReferences.map((reference) => (
                               <TableRow key={reference.code} hover>
-                                <TableCell>{reference.code}</TableCell>
+                                <TableCell>{formatReferenceCode(reference.code)}</TableCell>
                                 {config.valueField ? <TableCell>{formatValue(reference)}</TableCell> : null}
                                 <TableCell>
                                   <Button
@@ -320,7 +341,7 @@ export function AdminReferencesPage() {
                                     color="error"
                                     onClick={() => { deleteReference(reference.code); }}
                                   >
-                                    Delete
+                                    {t("Delete")}
                                   </Button>
                                 </TableCell>
                               </TableRow>
@@ -340,24 +361,27 @@ export function AdminReferencesPage() {
                           onClick={() => loadReferences(pageIndex - 1, activeType)}
                           disabled={referencesPage.first}
                         >
-                          Previous
+                          {t("Previous")}
                         </Button>
                         <Typography variant="body2" color="text.secondary">
-                          Page {referencesPage.number + 1} of {referencesPage.totalPages || 1}
+                          {t("Page {current} of {total}", {
+                            current: referencesPage.number + 1,
+                            total: referencesPage.totalPages || 1,
+                          })}
                         </Typography>
                         <Button
                           variant="outlined"
                           onClick={() => loadReferences(pageIndex + 1, activeType)}
                           disabled={referencesPage.last}
                         >
-                          Next
+                          {t("Next")}
                         </Button>
                       </Stack>
                     </>
                   ) : null}
 
                   {!isLoading && !referencesPage?.content?.length ? (
-                    <Alert severity="info">No references found yet.</Alert>
+                    <Alert severity="info">{t("No references found yet.")}</Alert>
                   ) : null}
                 </Stack>
               </CardContent>

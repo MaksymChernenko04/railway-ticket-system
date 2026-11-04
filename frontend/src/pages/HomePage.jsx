@@ -12,9 +12,11 @@ import {
 } from "@mui/material";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
 export function HomePage() {
   const { isAuthenticated } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
 
   if (isAuthenticated) {
@@ -56,16 +58,15 @@ export function HomePage() {
                   color="primary.main"
                   sx={{ letterSpacing: "0.16em", fontWeight: 700 }}
                 >
-                  Home
+                  {t("Home")}
                 </Typography>
                 <Typography variant="h1" sx={{ mt: 1, fontSize: { xs: "2.8rem", md: "4.4rem" }, maxWidth: 1000 }}>
-                  Railway access starts here.
+                  {t("Railway access starts here.")}
                 </Typography>
               </Box>
 
               <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 760, fontWeight: 400 }}>
-                Plan future journeys, manage your account, and use railway services in one place.
-                Sign in if you already have an account or register to get started.
+                {t("Plan future journeys, manage your account, and use railway services in one place. Sign in if you already have an account or register to get started.")}
               </Typography>
 
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -75,7 +76,7 @@ export function HomePage() {
                   endIcon={<ArrowForwardIcon />}
                   onClick={() => navigate("/login")}
                 >
-                  Login
+                  {t("Login")}
                 </Button>
                 <Button
                   variant="outlined"
@@ -83,7 +84,7 @@ export function HomePage() {
                   startIcon={<PersonAddAlt1Icon />}
                   onClick={() => navigate("/register")}
                 >
-                  Register
+                  {t("Register")}
                 </Button>
               </Stack>
             </Stack>

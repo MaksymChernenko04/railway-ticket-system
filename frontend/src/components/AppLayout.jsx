@@ -7,6 +7,8 @@ import {
   Button,
   Container,
   IconButton,
+  MenuItem,
+  Select,
   Stack,
   Tooltip,
   Toolbar,
@@ -15,6 +17,7 @@ import {
 import { useState } from "react";
 import { Link as RouterLink, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
 const guestNavItems = [
   { to: "/home", label: "Home" },
@@ -32,11 +35,10 @@ const userNavItems = [
 
 const adminClientNavItems = [
   { to: "/welcome", label: "Welcome" },
-  { to: "/trips/search", label: "Search trips" },
-  { to: "/assistant", label: "Assistant" },
 ];
 
 const adminNavItems = [
+  { to: "/admin/references", label: "References" },
   { to: "/admin/stations", label: "Stations" },
   { to: "/admin/routes", label: "Routes" },
   { to: "/admin/route-stops", label: "Route stops" },
@@ -46,7 +48,7 @@ const adminNavItems = [
   { to: "/admin/analytics", label: "Analytics" },
 ];
 
-function renderNavButton(to, label) {
+function renderNavButton(to, label, t) {
   return (
     <Button
       key={to}
@@ -69,7 +71,7 @@ function renderNavButton(to, label) {
         },
       }}
     >
-      {label}
+      {t(label)}
     </Button>
   );
 }
@@ -82,12 +84,13 @@ function getNavItems(isAuthenticated, isAdmin) {
   return isAuthenticated ? userNavItems : guestNavItems;
 }
 
-function renderNavItems(isAuthenticated, isAdmin) {
-  return getNavItems(isAuthenticated, isAdmin).map((item) => renderNavButton(item.to, item.label));
+function renderNavItems(isAuthenticated, isAdmin, t) {
+  return getNavItems(isAuthenticated, isAdmin).map((item) => renderNavButton(item.to, item.label, t));
 }
 
 export function AppLayout() {
   const { isAuthenticated, logout, user } = useAuth();
+  const { language, setLanguage, t } = useI18n();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const initials = user?.firstName?.[0] || user?.email?.[0] || "U";
@@ -109,7 +112,7 @@ export function AppLayout() {
               <TrainIcon />
               <Box sx={{ minWidth: 0 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                  Railway Ticket System
+                  {t("Railway Ticket System")}
                 </Typography>
               </Box>
             </Stack>
@@ -120,13 +123,13 @@ export function AppLayout() {
               alignItems="center"
               sx={{ display: { xs: "none", md: "flex" } }}
             >
-              {renderNavItems(isAuthenticated, isAdmin)}
+              {renderNavItems(isAuthenticated, isAdmin, t)}
             </Stack>
 
             <Stack direction="row" spacing={1} alignItems="center">
               {isAuthenticated ? (
                 <>
-                  <Tooltip title="Open profile">
+                  <Tooltip title={t("Open profile")}>
                     <IconButton
                       component={RouterLink}
                       to="/profile"
@@ -155,10 +158,32 @@ export function AppLayout() {
                       },
                     }}
                   >
-                    Logout
+                    {t("Logout")}
                   </Button>
                 </>
               ) : null}
+
+              <Select
+                size="small"
+                value={language}
+                onChange={(event) => setLanguage(event.target.value)}
+                sx={{
+                  color: "inherit",
+                  minWidth: 78,
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "rgba(255,255,255,0.42)",
+                  },
+                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "rgba(255,255,255,0.74)",
+                  },
+                  "& .MuiSvgIcon-root": {
+                    color: "inherit",
+                  },
+                }}
+              >
+                <MenuItem value="en">EN</MenuItem>
+                <MenuItem value="uk">UA</MenuItem>
+              </Select>
 
               <IconButton
                 color="inherit"
@@ -172,7 +197,7 @@ export function AppLayout() {
 
           {isMenuOpen ? (
             <Stack spacing={1.25} sx={{ display: { xs: "flex", md: "none" }, pb: 2 }}>
-              {renderNavItems(isAuthenticated, isAdmin)}
+              {renderNavItems(isAuthenticated, isAdmin, t)}
               {isAuthenticated ? (
                 <Button
                   color="inherit"
@@ -185,7 +210,7 @@ export function AppLayout() {
                     },
                   }}
                 >
-                  Logout
+                  {t("Logout")}
                 </Button>
               ) : null}
             </Stack>

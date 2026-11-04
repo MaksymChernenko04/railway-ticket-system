@@ -26,6 +26,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { nextSortState, SortableTableCell, sortRows } from "../components/SortableTableCell.jsx";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
 const emptyForm = {
     number: "",
@@ -36,6 +37,7 @@ const emptyForm = {
 
 export function AdminRoutesPage() {
     const { authorizedGet, authorizedPost, authorizedDelete, user } = useAuth();
+    const { t } = useI18n();
     const [routesPage, setRoutesPage] = useState(null);
     const [currencies, setCurrencies] = useState([]);
     const [form, setForm] = useState(emptyForm);
@@ -89,7 +91,7 @@ export function AdminRoutesPage() {
             await authorizedPost("/api/admin/routes", {
                 ...form,
             });
-            setFeedback("Route created.");
+            setFeedback(t("Route created."));
             setForm(emptyForm);
             await loadRoutes(0);
         } catch (submitError) {
@@ -100,7 +102,7 @@ export function AdminRoutesPage() {
     }
 
     async function deleteRoute(id) {
-        if (!globalThis.confirm("Are you sure you want to delete this route?")) {
+        if (!globalThis.confirm(t("Are you sure you want to delete this route?"))) {
             return;
         }
 
@@ -109,7 +111,7 @@ export function AdminRoutesPage() {
 
         try {
             await authorizedDelete(`/api/admin/routes/${id}`);
-            setFeedback("Route deleted.");
+            setFeedback(t("Route deleted."));
 
             const isLastItemOnPage = routesPage?.content?.length === 1;
             const nextPageIndex = (isLastItemOnPage && pageIndex > 0) ? pageIndex - 1 : pageIndex;
@@ -163,11 +165,14 @@ export function AdminRoutesPage() {
                                             color="primary.main"
                                             sx={{ letterSpacing: "0.16em", fontWeight: 700 }}
                                         >
-                                            Admin panel
+                                            {t("Admin panel")}
                                         </Typography>
-                                        <Typography variant="h4">Routes management</Typography>
+                                        <Typography variant="h4">{t("Routes management")}</Typography>
                                         <Typography variant="body2" color="text.secondary">
-                                            Logged in as {user?.firstName} {user?.lastName} ({user?.email})
+                                            {t("Logged in as {name} ({email})", {
+                                                name: [user?.firstName, user?.lastName].filter(Boolean).join(" "),
+                                                email: user?.email,
+                                            })}
                                         </Typography>
                                     </Box>
                                 </Stack>
@@ -187,14 +192,14 @@ export function AdminRoutesPage() {
                             <CardContent sx={{ p: 3 }}>
                                 <Stack spacing={3} component="form" onSubmit={handleSubmit}>
                                     <Box>
-                                        <Typography variant="h5">Create route</Typography>
+                                        <Typography variant="h5">{t("Create route")}</Typography>
                                         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                                            Set the public route number, name, base price, and currency.
+                                            {t("Set the public route number, name, base price, and currency.")}
                                         </Typography>
                                     </Box>
 
                                     <TextField
-                                        label="Number"
+                                        label={t("Number")}
                                         value={form.number}
                                         onChange={(event) => setForm({ ...form, number: event.target.value })}
                                         slotProps={{
@@ -205,7 +210,7 @@ export function AdminRoutesPage() {
                                     />
 
                                     <TextField
-                                        label="Name"
+                                        label={t("Name")}
                                         value={form.name}
                                         onChange={(event) => setForm({ ...form, name: event.target.value })}
                                         required
@@ -213,7 +218,7 @@ export function AdminRoutesPage() {
                                     />
 
                                     <TextField
-                                        label="Base price"
+                                        label={t("Base price")}
                                         value={form.basePrice}
                                         onChange={
                                         (event) => {
@@ -230,10 +235,10 @@ export function AdminRoutesPage() {
                                     />
 
                                     <FormControl fullWidth required>
-                                        <InputLabel id="route-currency-label">Currency</InputLabel>
+                                        <InputLabel id="route-currency-label">{t("Currency")}</InputLabel>
                                         <Select
                                             labelId="route-currency-label"
-                                            label="Currency"
+                                            label={t("Currency")}
                                             value={form.currencyCode}
                                             onChange={(event) => setForm({ ...form, currencyCode: event.target.value })}
                                         >
@@ -248,7 +253,7 @@ export function AdminRoutesPage() {
                                     {error ? <Alert severity="error">{error}</Alert> : null}
 
                                     <Button type="submit" variant="contained" size="large" disabled={isSubmitting}>
-                                        {isSubmitting ? "Saving..." : "Create route"}
+                                        {isSubmitting ? t("Saving...") : t("Create route")}
                                     </Button>
                                 </Stack>
                             </CardContent>
@@ -264,14 +269,14 @@ export function AdminRoutesPage() {
                                         spacing={2}
                                     >
                                         <Box>
-                                            <Typography variant="h5">Existing routes</Typography>
+                                            <Typography variant="h5">{t("Existing routes")}</Typography>
                                         </Box>
                                         <Button
                                             variant="outlined"
                                             startIcon={<RefreshIcon />}
                                             onClick={() => loadRoutes(pageIndex)}
                                         >
-                                            Refresh
+                                            {t("Refresh")}
                                         </Button>
                                     </Stack>
 
@@ -281,7 +286,7 @@ export function AdminRoutesPage() {
                                         <Box sx={{ py: 8, display: "grid", placeItems: "center" }}>
                                             <Stack spacing={2} alignItems="center">
                                                 <CircularProgress />
-                                                <Typography color="text.secondary">Loading routes...</Typography>
+                                                <Typography color="text.secondary">{t("Loading routes...")}</Typography>
                                             </Stack>
                                         </Box>
                                     ) : null}
@@ -292,11 +297,11 @@ export function AdminRoutesPage() {
                                                 <Table>
                                                     <TableHead>
                                                         <TableRow>
-                                                            <SortableTableCell sort={sort} field="number" onSort={handleSort}>Number</SortableTableCell>
-                                                            <SortableTableCell sort={sort} field="name" onSort={handleSort}>Name</SortableTableCell>
-                                                            <SortableTableCell sort={sort} field="basePrice" onSort={handleSort}>Base price</SortableTableCell>
-                                                            <SortableTableCell sort={sort} field="currencyCode" onSort={handleSort}>Currency</SortableTableCell>
-                                                            <TableCell>Action</TableCell>
+                                                            <SortableTableCell sort={sort} field="number" onSort={handleSort}>{t("Number")}</SortableTableCell>
+                                                            <SortableTableCell sort={sort} field="name" onSort={handleSort}>{t("Name")}</SortableTableCell>
+                                                            <SortableTableCell sort={sort} field="basePrice" onSort={handleSort}>{t("Base price")}</SortableTableCell>
+                                                            <SortableTableCell sort={sort} field="currencyCode" onSort={handleSort}>{t("Currency")}</SortableTableCell>
+                                                            <TableCell>{t("Action")}</TableCell>
                                                         </TableRow>
                                                     </TableHead>
                                                     <TableBody>
@@ -312,7 +317,7 @@ export function AdminRoutesPage() {
                                                                         color="error"
                                                                         onClick={() => {deleteRoute(route.id)}}
                                                                     >
-                                                                        Delete
+                                                                        {t("Delete")}
                                                                     </Button>
                                                                 </TableCell>
                                                             </TableRow>
@@ -332,24 +337,24 @@ export function AdminRoutesPage() {
                                                     onClick={() => loadRoutes(pageIndex - 1)}
                                                     disabled={routesPage.first}
                                                 >
-                                                    Previous
+                                                    {t("Previous")}
                                                 </Button>
                                                 <Typography variant="body2" color="text.secondary">
-                                                    Page {routesPage.number + 1} of {routesPage.totalPages || 1}
+                                                    {t("Page {current} of {total}", { current: routesPage.number + 1, total: routesPage.totalPages || 1 })}
                                                 </Typography>
                                                 <Button
                                                     variant="outlined"
                                                     onClick={() => loadRoutes(pageIndex + 1)}
                                                     disabled={routesPage.last}
                                                 >
-                                                    Next
+                                                    {t("Next")}
                                                 </Button>
                                             </Stack>
                                         </>
                                     ) : null}
 
                                     {!isLoading && !routesPage?.content?.length ? (
-                                        <Alert severity="info">No routes found yet.</Alert>
+                                        <Alert severity="info">{t("No routes found yet.")}</Alert>
                                     ) : null}
                                 </Stack>
                             </CardContent>

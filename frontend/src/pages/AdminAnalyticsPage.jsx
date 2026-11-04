@@ -27,6 +27,7 @@ import {
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { nextSortState, SortableTableCell, sortRows } from "../components/SortableTableCell.jsx";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
 function toDateInput(date) {
   const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -100,11 +101,13 @@ function formatMoney(value, currencyCode) {
 }
 
 function EmptyRows({ colSpan }) {
+  const { t } = useI18n();
+
   return (
     <TableRow>
       <TableCell colSpan={colSpan}>
         <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 3 }}>
-          No data for selected filters.
+          {t("No data for selected filters.")}
         </Typography>
       </TableCell>
     </TableRow>
@@ -112,11 +115,13 @@ function EmptyRows({ colSpan }) {
 }
 
 function AnalyticsTable({ title, children }) {
+  const { t } = useI18n();
+
   return (
     <Card>
       <CardContent sx={{ p: 3 }}>
         <Stack spacing={2}>
-          <Typography variant="h6">{title}</Typography>
+          <Typography variant="h6">{t(title)}</Typography>
           <TableContainer component={Paper} variant="outlined">
             <Table size="small">{children}</Table>
           </TableContainer>
@@ -127,6 +132,7 @@ function AnalyticsTable({ title, children }) {
 }
 
 function SummaryKpiTable({ rows }) {
+  const { t } = useI18n();
   const [sort, setSort] = useState({ field: "currencyCode", direction: "asc" });
   const sortedRows = sortRows(rows, sort, {
     soldTicketCount: (row) => Number(row.soldTicketCount),
@@ -141,12 +147,12 @@ function SummaryKpiTable({ rows }) {
     <AnalyticsTable title="Summary KPIs">
       <TableHead>
         <TableRow>
-          <SortableTableCell sort={sort} field="currencyCode" onSort={handleSort}>Currency</SortableTableCell>
-          <SortableTableCell sort={sort} field="soldTicketCount" onSort={handleSort} align="right">Tickets</SortableTableCell>
-          <SortableTableCell sort={sort} field="totalRevenue" onSort={handleSort} align="right">Revenue</SortableTableCell>
-          <SortableTableCell sort={sort} field="averageTicketPrice" onSort={handleSort} align="right">Avg ticket</SortableTableCell>
-          <SortableTableCell sort={sort} field="paidOrderCount" onSort={handleSort} align="right">Orders</SortableTableCell>
-          <SortableTableCell sort={sort} field="customerCount" onSort={handleSort} align="right">Customers</SortableTableCell>
+          <SortableTableCell sort={sort} field="currencyCode" onSort={handleSort}>{t("Currency")}</SortableTableCell>
+          <SortableTableCell sort={sort} field="soldTicketCount" onSort={handleSort} align="right">{t("Tickets")}</SortableTableCell>
+          <SortableTableCell sort={sort} field="totalRevenue" onSort={handleSort} align="right">{t("Revenue")}</SortableTableCell>
+          <SortableTableCell sort={sort} field="averageTicketPrice" onSort={handleSort} align="right">{t("Avg ticket")}</SortableTableCell>
+          <SortableTableCell sort={sort} field="paidOrderCount" onSort={handleSort} align="right">{t("Orders")}</SortableTableCell>
+          <SortableTableCell sort={sort} field="customerCount" onSort={handleSort} align="right">{t("Customers")}</SortableTableCell>
         </TableRow>
       </TableHead>
       <TableBody>
@@ -166,6 +172,7 @@ function SummaryKpiTable({ rows }) {
 }
 
 function RevenueByRouteTable({ rows }) {
+  const { t } = useI18n();
   const [sort, setSort] = useState({ field: "routeNumber", direction: "asc" });
   const sortedRows = sortRows(rows, sort, {
     soldTicketCount: (row) => Number(row.soldTicketCount),
@@ -180,12 +187,12 @@ function RevenueByRouteTable({ rows }) {
     <AnalyticsTable title="Revenue by route">
       <TableHead>
         <TableRow>
-          <SortableTableCell sort={sort} field="routeNumber" onSort={handleSort}>Route</SortableTableCell>
-          <SortableTableCell sort={sort} field="soldTicketCount" onSort={handleSort} align="right">Tickets</SortableTableCell>
-          <SortableTableCell sort={sort} field="totalRevenue" onSort={handleSort} align="right">Revenue</SortableTableCell>
-          <SortableTableCell sort={sort} field="averageTicketPrice" onSort={handleSort} align="right">Avg ticket</SortableTableCell>
-          <SortableTableCell sort={sort} field="paidOrderCount" onSort={handleSort} align="right">Orders</SortableTableCell>
-          <SortableTableCell sort={sort} field="customerCount" onSort={handleSort} align="right">Customers</SortableTableCell>
+          <SortableTableCell sort={sort} field="routeNumber" onSort={handleSort}>{t("Route")}</SortableTableCell>
+          <SortableTableCell sort={sort} field="soldTicketCount" onSort={handleSort} align="right">{t("Tickets")}</SortableTableCell>
+          <SortableTableCell sort={sort} field="totalRevenue" onSort={handleSort} align="right">{t("Revenue")}</SortableTableCell>
+          <SortableTableCell sort={sort} field="averageTicketPrice" onSort={handleSort} align="right">{t("Avg ticket")}</SortableTableCell>
+          <SortableTableCell sort={sort} field="paidOrderCount" onSort={handleSort} align="right">{t("Orders")}</SortableTableCell>
+          <SortableTableCell sort={sort} field="customerCount" onSort={handleSort} align="right">{t("Customers")}</SortableTableCell>
         </TableRow>
       </TableHead>
       <TableBody>
@@ -205,6 +212,7 @@ function RevenueByRouteTable({ rows }) {
 }
 
 function PopularSegmentsTable({ rows }) {
+  const { t } = useI18n();
   const [sort, setSort] = useState({ field: "startStationName", direction: "asc" });
   const sortedRows = sortRows(rows, sort, {
     ticketCount: (row) => Number(row.ticketCount),
@@ -216,9 +224,9 @@ function PopularSegmentsTable({ rows }) {
     <AnalyticsTable title="Popular segments across all routes">
       <TableHead>
         <TableRow>
-          <SortableTableCell sort={sort} field="startStationName" onSort={handleSort}>Segment</SortableTableCell>
-          <SortableTableCell sort={sort} field="ticketCount" onSort={handleSort} align="right">Tickets</SortableTableCell>
-          <SortableTableCell sort={sort} field="totalRevenue" onSort={handleSort} align="right">Revenue</SortableTableCell>
+          <SortableTableCell sort={sort} field="startStationName" onSort={handleSort}>{t("Segment")}</SortableTableCell>
+          <SortableTableCell sort={sort} field="ticketCount" onSort={handleSort} align="right">{t("Tickets")}</SortableTableCell>
+          <SortableTableCell sort={sort} field="totalRevenue" onSort={handleSort} align="right">{t("Revenue")}</SortableTableCell>
         </TableRow>
       </TableHead>
       <TableBody>
@@ -238,8 +246,10 @@ function PopularSegmentsTable({ rows }) {
 }
 
 function SeatOccupancyTable({ title, rows }) {
+  const { t } = useI18n();
   const [sort, setSort] = useState({ field: "departureAtUtc", direction: "asc" });
   const sortedRows = sortRows(rows, sort, {
+    tripId: (row) => Number(row.tripId),
     totalSeatCount: (row) => Number(row.totalSeatCount),
     occupancyPercent: (row) => Number(row.occupancyPercent),
   });
@@ -249,32 +259,36 @@ function SeatOccupancyTable({ title, rows }) {
     <AnalyticsTable title={title}>
       <TableHead>
         <TableRow>
-          <SortableTableCell sort={sort} field="departureAtUtc" onSort={handleSort}>Departure</SortableTableCell>
-          <SortableTableCell sort={sort} field="routeNumber" onSort={handleSort}>Route</SortableTableCell>
-          <SortableTableCell sort={sort} field="totalSeatCount" onSort={handleSort} align="right">Seats</SortableTableCell>
-          <SortableTableCell sort={sort} field="occupancyPercent" onSort={handleSort} align="right">Occupancy</SortableTableCell>
+          <SortableTableCell sort={sort} field="tripId" onSort={handleSort}>{t("Trip ID")}</SortableTableCell>
+          <SortableTableCell sort={sort} field="departureAtUtc" onSort={handleSort}>{t("Departure")}</SortableTableCell>
+          <SortableTableCell sort={sort} field="routeNumber" onSort={handleSort}>{t("Route")}</SortableTableCell>
+          <SortableTableCell sort={sort} field="totalSeatCount" onSort={handleSort} align="right">{t("Seats")}</SortableTableCell>
+          <SortableTableCell sort={sort} field="occupancyPercent" onSort={handleSort} align="right">{t("Occupancy")}</SortableTableCell>
         </TableRow>
       </TableHead>
       <TableBody>
         {sortedRows.length ? sortedRows.map((row) => (
           <TableRow key={row.tripId} hover>
+            <TableCell>{row.tripId}</TableCell>
             <TableCell>{formatDateTime(row.departureAtUtc)}</TableCell>
             <TableCell>{row.routeNumber} - {row.routeName}</TableCell>
             <TableCell align="right">{formatNumber(row.totalSeatCount)}</TableCell>
             <TableCell align="right">{formatNumber(row.occupancyPercent, { maximumFractionDigits: 2 })}%</TableCell>
           </TableRow>
-        )) : <EmptyRows colSpan={4} />}
+        )) : <EmptyRows colSpan={5} />}
       </TableBody>
     </AnalyticsTable>
   );
 }
 
 function AnalyticsChatPanel({ messages, value, onChange, onSubmit, isLoading, error }) {
+  const { t } = useI18n();
+
   return (
     <Card>
       <CardContent sx={{ p: 3 }}>
         <Stack spacing={2}>
-          <Typography variant="h6">AI assistant</Typography>
+          <Typography variant="h6">{t("AI assistant")}</Typography>
 
           <Paper
             variant="outlined"
@@ -324,7 +338,7 @@ function AnalyticsChatPanel({ messages, value, onChange, onSubmit, isLoading, er
                   >
                     <Stack direction="row" spacing={1.25} alignItems="center">
                       <CircularProgress size={18} />
-                      <Typography variant="body2">Generating answer...</Typography>
+                      <Typography variant="body2">{t("Generating answer...")}</Typography>
                     </Stack>
                   </Box>
                 </Box>
@@ -332,7 +346,7 @@ function AnalyticsChatPanel({ messages, value, onChange, onSubmit, isLoading, er
 
               {!messages.length ? (
                 <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 8 }}>
-                  No messages yet.
+                  {t("No messages yet.")}
                 </Typography>
               ) : null}
             </Stack>
@@ -342,7 +356,7 @@ function AnalyticsChatPanel({ messages, value, onChange, onSubmit, isLoading, er
 
           <Stack component="form" onSubmit={onSubmit} direction={{ xs: "column", md: "row" }} spacing={1.5}>
             <TextField
-              label="Message"
+              label={t("Message")}
               value={value}
               onChange={(event) => onChange(event.target.value)}
               disabled={isLoading}
@@ -357,7 +371,7 @@ function AnalyticsChatPanel({ messages, value, onChange, onSubmit, isLoading, er
               disabled={isLoading || !value.trim()}
               sx={{ minWidth: 140, alignSelf: { md: "stretch" } }}
             >
-              Send
+              {t("Send")}
             </Button>
           </Stack>
         </Stack>
@@ -368,6 +382,7 @@ function AnalyticsChatPanel({ messages, value, onChange, onSubmit, isLoading, er
 
 export function AdminAnalyticsPage() {
   const { authorizedGet, authorizedPost, user } = useAuth();
+  const { t, language } = useI18n();
   const [filters, setFilters] = useState(() => buildInitialFilters());
   const [routes, setRoutes] = useState([]);
   const [analytics, setAnalytics] = useState(null);
@@ -453,6 +468,7 @@ export function AdminAnalyticsPage() {
     try {
       const response = await authorizedPost("/api/admin/analytics/chat", {
         conversationId,
+        language,
         dateFrom: toStartOfLocalDayIso(filters.dateFrom),
         dateTo: toEndOfLocalDayExclusiveIso(filters.dateTo),
         routeId: filters.routeId ? Number(filters.routeId) : null,
@@ -501,11 +517,14 @@ export function AdminAnalyticsPage() {
                 </Box>
                 <Box sx={{ flexGrow: 1 }}>
                   <Typography variant="overline" color="primary.main" sx={{ letterSpacing: "0.16em", fontWeight: 700 }}>
-                    Admin panel
+                    {t("Admin panel")}
                   </Typography>
-                  <Typography variant="h4">Analytics</Typography>
+                  <Typography variant="h4">{t("Analytics")}</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Logged in as {user?.firstName} {user?.lastName} ({user?.email})
+                    {t("Logged in as {name} ({email})", {
+                      name: `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim(),
+                      email: user?.email,
+                    })}
                   </Typography>
                 </Box>
               </Stack>
@@ -517,7 +536,7 @@ export function AdminAnalyticsPage() {
               <Stack component="form" onSubmit={handleSubmit} spacing={2}>
                 <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "flex-end" }}>
                   <TextField
-                    label="Start date"
+                    label={t("Start date")}
                     type="date"
                     value={filters.dateFrom}
                     onChange={(event) => updateFilter("dateFrom", event.target.value)}
@@ -526,7 +545,7 @@ export function AdminAnalyticsPage() {
                     fullWidth
                   />
                   <TextField
-                    label="End date"
+                    label={t("End date")}
                     type="date"
                     value={filters.dateTo}
                     onChange={(event) => updateFilter("dateTo", event.target.value)}
@@ -535,14 +554,14 @@ export function AdminAnalyticsPage() {
                     fullWidth
                   />
                   <FormControl fullWidth disabled={isRoutesLoading}>
-                    <InputLabel id="analytics-route-label">Route</InputLabel>
+                    <InputLabel id="analytics-route-label">{t("Route")}</InputLabel>
                     <Select
                       labelId="analytics-route-label"
-                      label="Route"
+                      label={t("Route")}
                       value={filters.routeId}
                       onChange={(event) => updateFilter("routeId", event.target.value)}
                     >
-                      <MenuItem value="">All routes</MenuItem>
+                      <MenuItem value="">{t("All routes")}</MenuItem>
                       {routes.map((route) => (
                         <MenuItem key={route.id} value={String(route.id)}>
                           {route.number} - {route.name}
@@ -551,7 +570,7 @@ export function AdminAnalyticsPage() {
                     </Select>
                   </FormControl>
                   <TextField
-                    label="Top rows"
+                    label={t("Top rows")}
                     type="number"
                     value={filters.limit}
                     onChange={(event) => updateFilter("limit", event.target.value)}
@@ -566,7 +585,7 @@ export function AdminAnalyticsPage() {
                     disabled={isLoading}
                     sx={{ minWidth: 160 }}
                   >
-                    Build
+                    {t("Build")}
                   </Button>
                 </Stack>
 
@@ -580,7 +599,7 @@ export function AdminAnalyticsPage() {
               <CardContent sx={{ py: 8, display: "grid", placeItems: "center" }}>
                 <Stack spacing={2} alignItems="center">
                   <CircularProgress />
-                  <Typography color="text.secondary">Loading analytics...</Typography>
+                  <Typography color="text.secondary">{t("Loading analytics...")}</Typography>
                 </Stack>
               </CardContent>
             </Card>

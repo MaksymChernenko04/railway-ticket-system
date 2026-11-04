@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
 const initialForm = {
   firstName: "",
@@ -25,6 +26,7 @@ const initialForm = {
 
 export function RegisterPage() {
   const { isAuthenticated, register, user } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState("");
@@ -91,14 +93,14 @@ export function RegisterPage() {
                     color="secondary.main"
                     sx={{ letterSpacing: "0.16em", fontWeight: 700 }}
                   >
-                    Create account
+                    {t("Create account")}
                   </Typography>
                   <Typography variant="h2" sx={{ mt: 1, maxWidth: 640 }}>
-                    Create your account and start booking tickets.
+                    {t("Create your account and start booking tickets.")}
                   </Typography>
                 </Box>
                 <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 560 }}>
-                  Registration gives you personal access to ticket booking and profile management.
+                  {t("Registration gives you personal access to ticket booking and profile management.")}
                 </Typography>
               </Stack>
             </CardContent>
@@ -108,22 +110,22 @@ export function RegisterPage() {
             <CardContent sx={{ p: { xs: 3, md: 4.5 }, minHeight: "100%" }}>
               <Stack spacing={3} component="form" onSubmit={handleSubmit}>
                 <Box>
-                  <Typography variant="h4">Register</Typography>
+                  <Typography variant="h4">{t("Register")}</Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                    Fill in your basic information and choose a password to create your account.
+                    {t("Fill in your basic information and choose a password to create your account.")}
                   </Typography>
                 </Box>
 
                 <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" } }}>
                   <TextField
-                    label="First name"
+                    label={t("First name")}
                     value={form.firstName}
                     onChange={(event) => setForm({ ...form, firstName: event.target.value })}
                     required
                     fullWidth
                   />
                   <TextField
-                    label="Last name"
+                    label={t("Last name")}
                     value={form.lastName}
                     onChange={(event) => setForm({ ...form, lastName: event.target.value })}
                     required
@@ -132,7 +134,7 @@ export function RegisterPage() {
                 </Box>
 
                 <TextField
-                  label="Email"
+                  label={t("Email")}
                   type="email"
                   value={form.email}
                   onChange={(event) => setForm({ ...form, email: event.target.value })}
@@ -141,9 +143,9 @@ export function RegisterPage() {
                 />
 
                 <TextField
-                  label="Password"
+                  label={t("Password")}
                   type="password"
-                  helperText="Use at least 8 characters with one letter and one digit."
+                  helperText={t("Use at least 8 characters with one letter and one digit.")}
                   value={form.password}
                   onChange={(event) => setForm({ ...form, password: event.target.value })}
                   slotProps={{
@@ -162,13 +164,13 @@ export function RegisterPage() {
                   startIcon={<PersonAddAlt1Icon />}
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Creating account..." : "Register"}
+                  {isSubmitting ? t("Creating account...") : t("Register")}
                 </Button>
 
                 <Typography variant="body2" color="text.secondary">
-                  Already registered?{" "}
+                  {t("Already registered?")}{" "}
                   <MuiLink component={Link} to="/login" underline="hover">
-                    Go to login
+                    {t("Go to login")}
                   </MuiLink>
                 </Typography>
               </Stack>

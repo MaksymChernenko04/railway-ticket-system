@@ -25,6 +25,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { PassengerManager } from "../components/PassengerManager";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
 function formatDateTime(value) {
   if (!value) {
@@ -60,12 +61,6 @@ function formatMoney(amount, currencyCode) {
   const value = Number(amount ?? 0);
   return `${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currencyCode ?? ""}`.trim();
 }
-
-const directionLabel = {
-  FORWARD: "Forward",
-  BACKWARD: "Backward",
-  SIDEWAYS: "Sideways",
-};
 
 function sortByColumn(left, right) {
   return Number(left.column) - Number(right.column);
@@ -170,7 +165,7 @@ function renderSeatPlaceholder(orientation = "seat") {
   );
 }
 
-function renderAvailableSeat(seat, selectedTripSeatIds, onToggleSeat, orientation = "seat", level = "seat") {
+function renderAvailableSeat(seat, selectedTripSeatIds, onToggleSeat, t, codeLabel, orientation = "seat", level = "seat") {
   if (!seat) {
     return renderSeatPlaceholder(orientation);
   }
@@ -180,9 +175,9 @@ function renderAvailableSeat(seat, selectedTripSeatIds, onToggleSeat, orientatio
 
   return (
     <Tooltip
-      title={`Seat ${seat.number}, ${seat.seatTypeCode}${level === "seat" ? "" : `, ${level}`}, ${
-        directionLabel[seat.direction] ?? seat.direction
-      }, ${status}`}
+      title={`${t("Seat")} ${seat.number}, ${codeLabel("seatType", seat.seatTypeCode)}${
+        level === "seat" ? "" : `, ${t(level)}`
+      }, ${codeLabel("direction", seat.direction)}, ${t(status)}`}
     >
       <Box
         component="button"
@@ -199,7 +194,7 @@ function renderAvailableSeat(seat, selectedTripSeatIds, onToggleSeat, orientatio
   );
 }
 
-function renderCoupeBlock(rowNumber, rowSeats, lux, selectedTripSeatIds, onToggleSeat) {
+function renderCoupeBlock(rowNumber, rowSeats, lux, selectedTripSeatIds, onToggleSeat, t, codeLabel) {
   const leftLower = getSeatByColumn(rowSeats, 1);
   const leftUpper = lux ? null : getSeatByColumn(rowSeats, 2);
   const rightLower = getSeatByColumn(rowSeats, lux ? 2 : 3);
@@ -208,7 +203,7 @@ function renderCoupeBlock(rowNumber, rowSeats, lux, selectedTripSeatIds, onToggl
   return (
     <Stack spacing={0.75} alignItems="center">
       <Typography variant="caption" color="text.secondary">
-        {lux ? "Compartment" : "Coupe"} {rowNumber}
+        {t(lux ? "Compartment" : "Coupe")} {rowNumber}
       </Typography>
       <Box
         sx={{
@@ -223,20 +218,20 @@ function renderCoupeBlock(rowNumber, rowSeats, lux, selectedTripSeatIds, onToggl
         }}
       >
         <Stack spacing={0.5}>
-          {lux ? null : renderAvailableSeat(leftUpper, selectedTripSeatIds, onToggleSeat, "berth", "upper")}
-          {renderAvailableSeat(leftLower, selectedTripSeatIds, onToggleSeat, "berth", "lower")}
+          {lux ? null : renderAvailableSeat(leftUpper, selectedTripSeatIds, onToggleSeat, t, codeLabel, "berth", "upper")}
+          {renderAvailableSeat(leftLower, selectedTripSeatIds, onToggleSeat, t, codeLabel, "berth", "lower")}
         </Stack>
         {renderCorridor({ width: 18, height: lux ? 62 : 126 })}
         <Stack spacing={0.5}>
-          {lux ? null : renderAvailableSeat(rightUpper, selectedTripSeatIds, onToggleSeat, "berth", "upper")}
-          {renderAvailableSeat(rightLower, selectedTripSeatIds, onToggleSeat, "berth", "lower")}
+          {lux ? null : renderAvailableSeat(rightUpper, selectedTripSeatIds, onToggleSeat, t, codeLabel, "berth", "upper")}
+          {renderAvailableSeat(rightLower, selectedTripSeatIds, onToggleSeat, t, codeLabel, "berth", "lower")}
         </Stack>
       </Box>
     </Stack>
   );
 }
 
-function renderSleeperScheme(car, selectedTripSeatIds, onToggleSeat) {
+function renderSleeperScheme(car, selectedTripSeatIds, onToggleSeat, t, codeLabel) {
   const rows = groupSeatsByRow(car.seats);
   const carType = car.carTypeCode?.toUpperCase();
   const isLux = carType === "LUX_SLEEPER";
@@ -247,13 +242,13 @@ function renderSleeperScheme(car, selectedTripSeatIds, onToggleSeat) {
       <Stack direction="row" spacing={1.5} alignItems="flex-start">
         {rows.map(([row, rowSeats]) => (
           <Stack key={row} spacing={0.75} alignItems="center">
-            {renderCoupeBlock(row, rowSeats, isLux, selectedTripSeatIds, onToggleSeat)}
+            {renderCoupeBlock(row, rowSeats, isLux, selectedTripSeatIds, onToggleSeat, t, codeLabel)}
             {isOpen ? (
               <>
                 {renderCorridor({ width: 126, height: 22 })}
                 <Stack spacing={0.5}>
-                  {renderAvailableSeat(getSeatByColumn(rowSeats, 6), selectedTripSeatIds, onToggleSeat, "forward", "upper")}
-                  {renderAvailableSeat(getSeatByColumn(rowSeats, 5), selectedTripSeatIds, onToggleSeat, "forward", "lower")}
+                  {renderAvailableSeat(getSeatByColumn(rowSeats, 6), selectedTripSeatIds, onToggleSeat, t, codeLabel, "forward", "upper")}
+                  {renderAvailableSeat(getSeatByColumn(rowSeats, 5), selectedTripSeatIds, onToggleSeat, t, codeLabel, "forward", "lower")}
                 </Stack>
               </>
             ) : (
@@ -266,7 +261,7 @@ function renderSleeperScheme(car, selectedTripSeatIds, onToggleSeat) {
   );
 }
 
-function renderFirstClassRow(rowSeats, selectedTripSeatIds, onToggleSeat) {
+function renderFirstClassRow(rowSeats, selectedTripSeatIds, onToggleSeat, t, codeLabel) {
   const orderedSeats = [1, 2, 3].map((column) => getSeatByColumn(rowSeats, column));
   const presentSeats = orderedSeats.filter(Boolean);
   const directionSplitIndex = presentSeats.findIndex(
@@ -280,20 +275,20 @@ function renderFirstClassRow(rowSeats, selectedTripSeatIds, onToggleSeat) {
     <Stack spacing={0.5} alignItems="center">
       {leftColumns.map((seat, index) => (
         <Box key={seat?.tripSeatId ?? `left-empty-${index}`}>
-          {renderAvailableSeat(seat, selectedTripSeatIds, onToggleSeat)}
+          {renderAvailableSeat(seat, selectedTripSeatIds, onToggleSeat, t, codeLabel)}
         </Box>
       ))}
       {renderCorridor({ width: 44, height: 22 })}
       {rightColumns.map((seat, index) => (
         <Box key={seat?.tripSeatId ?? `right-empty-${index}`}>
-          {renderAvailableSeat(seat, selectedTripSeatIds, onToggleSeat)}
+          {renderAvailableSeat(seat, selectedTripSeatIds, onToggleSeat, t, codeLabel)}
         </Box>
       ))}
     </Stack>
   );
 }
 
-function renderSittingScheme(car, selectedTripSeatIds, onToggleSeat) {
+function renderSittingScheme(car, selectedTripSeatIds, onToggleSeat, t, codeLabel) {
   const rows = groupSeatsByRow(car.seats);
   const isFirstClass = car.carTypeCode?.toUpperCase() === "SITTING_CLASS_1";
 
@@ -303,17 +298,17 @@ function renderSittingScheme(car, selectedTripSeatIds, onToggleSeat) {
         {rows.map(([row, rowSeats]) => (
           <Stack key={row} spacing={0.75} alignItems="center">
             <Typography variant="caption" color="text.secondary">
-              Row {row}
+              {t("Row")} {row}
             </Typography>
             {isFirstClass ? (
-              renderFirstClassRow(rowSeats, selectedTripSeatIds, onToggleSeat)
+              renderFirstClassRow(rowSeats, selectedTripSeatIds, onToggleSeat, t, codeLabel)
             ) : (
               <Stack spacing={0.5} alignItems="center">
-                {renderAvailableSeat(getSeatByColumn(rowSeats, 1), selectedTripSeatIds, onToggleSeat)}
-                {renderAvailableSeat(getSeatByColumn(rowSeats, 2), selectedTripSeatIds, onToggleSeat)}
+                {renderAvailableSeat(getSeatByColumn(rowSeats, 1), selectedTripSeatIds, onToggleSeat, t, codeLabel)}
+                {renderAvailableSeat(getSeatByColumn(rowSeats, 2), selectedTripSeatIds, onToggleSeat, t, codeLabel)}
                 {renderCorridor({ width: 44, height: 22 })}
-                {renderAvailableSeat(getSeatByColumn(rowSeats, 3), selectedTripSeatIds, onToggleSeat)}
-                {renderAvailableSeat(getSeatByColumn(rowSeats, 4), selectedTripSeatIds, onToggleSeat)}
+                {renderAvailableSeat(getSeatByColumn(rowSeats, 3), selectedTripSeatIds, onToggleSeat, t, codeLabel)}
+                {renderAvailableSeat(getSeatByColumn(rowSeats, 4), selectedTripSeatIds, onToggleSeat, t, codeLabel)}
               </Stack>
             )}
           </Stack>
@@ -323,7 +318,7 @@ function renderSittingScheme(car, selectedTripSeatIds, onToggleSeat) {
   );
 }
 
-function renderGenericScheme(car, selectedTripSeatIds, onToggleSeat) {
+function renderGenericScheme(car, selectedTripSeatIds, onToggleSeat, t, codeLabel) {
   const rows = groupSeatsByRow(car.seats);
 
   return (
@@ -332,10 +327,10 @@ function renderGenericScheme(car, selectedTripSeatIds, onToggleSeat) {
         {rows.map(([row, rowSeats]) => (
           <Stack key={row} spacing={0.75} alignItems="center">
             <Typography variant="caption" color="text.secondary">
-              Row {row}
+              {t("Row")} {row}
             </Typography>
             {rowSeats.map((seat) => (
-              <Box key={seat.tripSeatId}>{renderAvailableSeat(seat, selectedTripSeatIds, onToggleSeat)}</Box>
+              <Box key={seat.tripSeatId}>{renderAvailableSeat(seat, selectedTripSeatIds, onToggleSeat, t, codeLabel)}</Box>
             ))}
           </Stack>
         ))}
@@ -344,13 +339,13 @@ function renderGenericScheme(car, selectedTripSeatIds, onToggleSeat) {
   );
 }
 
-function renderSeatScheme(car, selectedTripSeatIds, onToggleSeat) {
+function renderSeatScheme(car, selectedTripSeatIds, onToggleSeat, t, codeLabel) {
   const carType = car.carTypeCode?.toUpperCase();
   const isSleeper = ["COUPE_SLEEPER", "LUX_SLEEPER", "OPEN_SLEEPER"].includes(carType);
   const isSitting = ["SITTING_CLASS_1", "SITTING_CLASS_2"].includes(carType);
 
   if (car.seats.length === 0) {
-    return <Alert severity="info">This car has no seats yet.</Alert>;
+    return <Alert severity="info">{t("This car has no seats yet.")}</Alert>;
   }
 
   return (
@@ -363,9 +358,9 @@ function renderSeatScheme(car, selectedTripSeatIds, onToggleSeat) {
         p: 2,
       }}
     >
-      {isSleeper ? renderSleeperScheme(car, selectedTripSeatIds, onToggleSeat) : null}
-      {isSitting ? renderSittingScheme(car, selectedTripSeatIds, onToggleSeat) : null}
-      {isSleeper || isSitting ? null : renderGenericScheme(car, selectedTripSeatIds, onToggleSeat)}
+      {isSleeper ? renderSleeperScheme(car, selectedTripSeatIds, onToggleSeat, t, codeLabel) : null}
+      {isSitting ? renderSittingScheme(car, selectedTripSeatIds, onToggleSeat, t, codeLabel) : null}
+      {isSleeper || isSitting ? null : renderGenericScheme(car, selectedTripSeatIds, onToggleSeat, t, codeLabel)}
     </Box>
   );
 }
@@ -375,6 +370,7 @@ export function SelectSeatsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { authorizedGet, authorizedPost, authorizedDelete } = useAuth();
+  const { codeLabel, t } = useI18n();
   const startTripStopId = searchParams.get("startTripStopId");
   const endTripStopId = searchParams.get("endTripStopId");
   const [trip, setTrip] = useState(null);
@@ -439,7 +435,7 @@ export function SelectSeatsPage() {
       setCheckoutError("");
 
       if (!tripId || !startTripStopId || !endTripStopId) {
-        setError("Please return to search and choose a trip again.");
+        setError(t("Please return to search and choose a trip again."));
         setIsLoading(false);
         return;
       }
@@ -543,13 +539,13 @@ export function SelectSeatsPage() {
     setCheckoutError("");
 
     if (!selectedSeats.length) {
-      setCheckoutError("Select one or more available seats.");
+      setCheckoutError(t("Select one or more available seats."));
       return;
     }
 
     const missingSeat = selectedSeats.find((seat) => !seatPassengerIds[seat.tripSeatId]);
     if (missingSeat) {
-      setCheckoutError(`Choose a passenger for seat ${missingSeat.number}.`);
+      setCheckoutError(t("Choose a passenger for seat {seat}.", { seat: missingSeat.number }));
       return;
     }
 
@@ -620,7 +616,7 @@ export function SelectSeatsPage() {
                   onClick={() => navigate("/trips/search")}
                   sx={{ alignSelf: "flex-start" }}
                 >
-                  Back to search
+                  {t("Back to search")}
                 </Button>
                 <Stack
                   direction={{ xs: "column", md: "row" }}
@@ -648,18 +644,18 @@ export function SelectSeatsPage() {
                         color="primary.main"
                         sx={{ letterSpacing: "0.16em", fontWeight: 700 }}
                       >
-                        Seat selection
+                        {t("Seat selection")}
                       </Typography>
                       <Typography variant="h4">
-                        {trip ? `${trip.trainNumber} - ${trip.trainName || "Train"}` : "Select seats"}
+                        {trip ? `${trip.trainNumber} - ${trip.trainName || t("Train")}` : t("Select seats")}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {trip ? `${trip.routeNumber} - ${trip.routeName}` : "Loading trip details"}
+                        {trip ? `${trip.routeNumber} - ${trip.routeName}` : t("Loading trip details")}
                       </Typography>
                     </Box>
                   </Stack>
                   {selectedSeats.length ? (
-                    <Chip color="primary" label={`${selectedSeats.length} selected`} sx={{ fontWeight: 700 }} />
+                    <Chip color="primary" label={t("{count} selected", { count: selectedSeats.length })} sx={{ fontWeight: 700 }} />
                   ) : null}
                 </Stack>
               </Stack>
@@ -673,7 +669,7 @@ export function SelectSeatsPage() {
               <CardContent sx={{ py: 8, display: "grid", placeItems: "center" }}>
                 <Stack spacing={2} alignItems="center">
                   <CircularProgress />
-                  <Typography color="text.secondary">Loading seats...</Typography>
+                  <Typography color="text.secondary">{t("Loading seats...")}</Typography>
                 </Stack>
               </CardContent>
             </Card>
@@ -694,7 +690,7 @@ export function SelectSeatsPage() {
                     <Stack spacing={2}>
                       <Stack direction="row" spacing={1.5} alignItems="center">
                         <TrainIcon color="primary" />
-                        <Typography variant="h5">Your trip</Typography>
+                        <Typography variant="h5">{t("Your trip")}</Typography>
                       </Stack>
 
                       <Box
@@ -707,15 +703,21 @@ export function SelectSeatsPage() {
                       >
                         <Paper variant="outlined" sx={{ p: 2 }}>
                           <Typography variant="caption" color="text.secondary">
-                            Departure
+                            {t("Departure")}
                           </Typography>
                           <Typography variant="h6">{segment.start?.stationName}</Typography>
                           <Typography variant="body2">{formatDateTime(segment.start?.departureAtUtc)}</Typography>
                         </Paper>
-                        <Chip variant="outlined" label={`${trip.carCount} cars / ${trip.seatCount} seats`} />
+                        <Chip
+                          variant="outlined"
+                          label={t("{carCount} cars / {seatCount} seats", {
+                            carCount: trip.carCount,
+                            seatCount: trip.seatCount,
+                          })}
+                        />
                         <Paper variant="outlined" sx={{ p: 2, textAlign: { xs: "left", md: "right" } }}>
                           <Typography variant="caption" color="text.secondary">
-                            Arrival
+                            {t("Arrival")}
                           </Typography>
                           <Typography variant="h6">{segment.end?.stationName}</Typography>
                           <Typography variant="body2">{formatDateTime(segment.end?.arrivalAtUtc)}</Typography>
@@ -737,23 +739,23 @@ export function SelectSeatsPage() {
                         >
                           <Box>
                             <Typography variant="h6">
-                              Car {car.ordinal}: {car.carNumber}
+                              {t("Car {ordinal}: {number}", { ordinal: car.ordinal, number: car.carNumber })}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              {car.carTypeCode}
+                              {codeLabel("carType", car.carTypeCode)}
                             </Typography>
                           </Box>
                           <Stack direction="row" spacing={1} flexWrap="wrap">
-                            {car.accessible ? <Chip size="small" color="success" label="Accessible" /> : null}
+                            {car.accessible ? <Chip size="small" color="success" label={t("Accessible")} /> : null}
                             <Chip
                               size="small"
                               variant="outlined"
-                              label={`${car.seats.filter((seat) => seat.available).length} available`}
+                              label={t("{count} available", { count: car.seats.filter((seat) => seat.available).length })}
                             />
                           </Stack>
                         </Stack>
 
-                        {renderSeatScheme(car, selectedTripSeatIds, toggleSeat)}
+                        {renderSeatScheme(car, selectedTripSeatIds, toggleSeat, t, codeLabel)}
                       </Stack>
                     </CardContent>
                   </Card>
@@ -764,13 +766,13 @@ export function SelectSeatsPage() {
                 <CardContent sx={{ p: 3 }}>
                   <Stack spacing={2.5}>
                     <Box>
-                      <Typography variant="h5">Checkout</Typography>
+                      <Typography variant="h5">{t("Checkout")}</Typography>
                     </Box>
 
                     {checkoutError ? <Alert severity="error">{checkoutError}</Alert> : null}
-                    {order?.status === "PAID" ? <Alert severity="success">Payment successful. Tickets are confirmed.</Alert> : null}
+                    {order?.status === "PAID" ? <Alert severity="success">{t("Payment successful. Tickets are confirmed.")}</Alert> : null}
 
-                    {!selectedSeats.length ? <Alert severity="info">Select one or more available seats.</Alert> : null}
+                    {!selectedSeats.length ? <Alert severity="info">{t("Select one or more available seats.")}</Alert> : null}
 
                     {!order ? (
                       <>
@@ -789,24 +791,24 @@ export function SelectSeatsPage() {
                           <Stack spacing={1.5}>
                             <Divider />
                             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                              Seat assignment
+                              {t("Seat assignment")}
                             </Typography>
                             {selectedSeats.map((seat) => (
                               <Paper key={seat.tripSeatId} variant="outlined" sx={{ p: 1.5 }}>
                                 <Stack spacing={1.25}>
                                   <Box>
                                     <Typography variant="subtitle2">
-                                      Car {seat.carOrdinal}, seat {seat.number}
+                                      {t("Car")} {seat.carOrdinal}, {t("Seat").toLowerCase()} {seat.number}
                                     </Typography>
                                     <Typography variant="caption" color="text.secondary">
-                                      {seat.seatTypeCode}
+                                      {codeLabel("seatType", seat.seatTypeCode)}
                                     </Typography>
                                   </Box>
                                   <FormControl fullWidth size="small" required disabled={!passengers.length}>
-                                    <InputLabel id={`seat-passenger-${seat.tripSeatId}`}>Passenger</InputLabel>
+                                    <InputLabel id={`seat-passenger-${seat.tripSeatId}`}>{t("Passenger")}</InputLabel>
                                     <Select
                                       labelId={`seat-passenger-${seat.tripSeatId}`}
-                                      label="Passenger"
+                                      label={t("Passenger")}
                                       value={seatPassengerIds[seat.tripSeatId] ?? ""}
                                       onChange={(event) => assignPassenger(seat.tripSeatId, event.target.value)}
                                     >
@@ -821,7 +823,7 @@ export function SelectSeatsPage() {
                                           )}
                                         >
                                           {passenger.firstName} {passenger.lastName}
-                                          {passenger.benefitCode ? ` - ${passenger.benefitCode}` : ""}
+                                          {passenger.benefitCode ? ` - ${codeLabel("benefit", passenger.benefitCode)}` : ""}
                                         </MenuItem>
                                       ))}
                                     </Select>
@@ -838,7 +840,7 @@ export function SelectSeatsPage() {
                           onClick={createOrder}
                           disabled={!selectedSeats.length || !passengers.length || isCreatingOrder}
                         >
-                          {isCreatingOrder ? "Creating order..." : "Create order"}
+                          {isCreatingOrder ? t("Creating order...") : t("Create order")}
                         </Button>
                       </>
                     ) : null}
@@ -848,10 +850,10 @@ export function SelectSeatsPage() {
                         <Divider />
                         <Box>
                           <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                            Order #{order.id}
+                            {t("Order #{id}", { id: order.id })}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            Status: {order.status}
+                            {t("Status: {status}", { status: codeLabel("status", order.status) })}
                           </Typography>
                         </Box>
 
@@ -863,12 +865,15 @@ export function SelectSeatsPage() {
                                   {ticket.passengerFirstName} {ticket.passengerLastName}
                                 </Typography>
                                 <Typography variant="body2">
-                                  Car {ticket.carOrdinal}, seat {ticket.seatNumber}
+                                  {t("Car")} {ticket.carOrdinal}, {t("Seat").toLowerCase()} {ticket.seatNumber}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
                                   {ticket.appliedBenefitCode
-                                    ? `${ticket.appliedBenefitCode} - ${ticket.appliedBenefitPercent}% discount`
-                                    : "No benefit"}
+                                    ? t("{code} - {percent}% discount", {
+                                        code: codeLabel("benefit", ticket.appliedBenefitCode),
+                                        percent: ticket.appliedBenefitPercent,
+                                      })
+                                    : t("No benefit")}
                                 </Typography>
                                 <Typography variant="subtitle2">
                                   {formatMoney(ticket.price, ticket.currencyCode)}
@@ -880,7 +885,7 @@ export function SelectSeatsPage() {
 
                         <Box>
                           <Typography variant="body2" color="text.secondary">
-                            Total
+                            {t("Total")}
                           </Typography>
                           <Typography variant="h5">
                             {formatMoney(order.totalAmount, order.currencyCode)}
@@ -890,16 +895,16 @@ export function SelectSeatsPage() {
                         {order.status === "PENDING" ? (
                           <>
                             <FormControl fullWidth>
-                              <InputLabel id="payment-method-label">Payment method</InputLabel>
+                              <InputLabel id="payment-method-label">{t("Payment method")}</InputLabel>
                               <Select
                                 labelId="payment-method-label"
-                                label="Payment method"
+                                label={t("Payment method")}
                                 value={paymentMethod}
                                 onChange={(event) => setPaymentMethod(event.target.value)}
                               >
-                                <MenuItem value="CARD">Card</MenuItem>
-                                <MenuItem value="APPLE_PAY">Apple Pay</MenuItem>
-                                <MenuItem value="GOOGLE_PAY">Google Pay</MenuItem>
+                                <MenuItem value="CARD">{codeLabel("paymentMethod", "CARD")}</MenuItem>
+                                <MenuItem value="APPLE_PAY">{codeLabel("paymentMethod", "APPLE_PAY")}</MenuItem>
+                                <MenuItem value="GOOGLE_PAY">{codeLabel("paymentMethod", "GOOGLE_PAY")}</MenuItem>
                               </Select>
                             </FormControl>
 
@@ -910,7 +915,7 @@ export function SelectSeatsPage() {
                               onClick={startPayment}
                               disabled={isStartingPayment}
                             >
-                              {isStartingPayment ? "Opening payment..." : "Pay"}
+                              {isStartingPayment ? t("Opening payment...") : t("Pay")}
                             </Button>
                           </>
                         ) : null}

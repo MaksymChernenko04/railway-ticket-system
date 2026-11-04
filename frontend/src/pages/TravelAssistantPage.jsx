@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
 function createConversationId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -24,8 +25,6 @@ function createConversationId() {
 
   return `client-chat-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
-
-const emptyChatText = "Твій віртуальний асистент на основі ШІ";
 
 function ChatMessage({ message }) {
   const isUser = message.role === "user";
@@ -51,6 +50,7 @@ function ChatMessage({ message }) {
 
 export function TravelAssistantPage() {
   const { authorizedPost, user } = useAuth();
+  const { t, language } = useI18n();
   const [conversationId, setConversationId] = useState(() => createConversationId());
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
@@ -84,6 +84,7 @@ export function TravelAssistantPage() {
     try {
       const response = await authorizedPost("/api/client/assistant/chat", {
         conversationId,
+        language,
         message: normalizedMessage,
       });
 
@@ -150,15 +151,15 @@ export function TravelAssistantPage() {
                       color="primary.main"
                       sx={{ letterSpacing: "0.16em", fontWeight: 700 }}
                     >
-                      Assistant
+                      {t("Assistant")}
                     </Typography>
-                    <Typography variant="h4">Travel assistant</Typography>
+                    <Typography variant="h4">{t("Travel assistant")}</Typography>
                   </Box>
                 </Stack>
                 <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                  <Chip color="primary" variant="outlined" label={user?.email ?? "Client"} />
+                  <Chip color="primary" variant="outlined" label={user?.email ?? t("Client")} />
                   <Button variant="outlined" onClick={startNewChat}>
-                    New chat
+                    {t("New chat")}
                   </Button>
                 </Stack>
               </Stack>
@@ -196,7 +197,7 @@ export function TravelAssistantPage() {
                         >
                           <Stack direction="row" spacing={1.25} alignItems="center">
                             <CircularProgress size={18} />
-                            <Typography variant="body2">Generating answer...</Typography>
+                            <Typography variant="body2">{t("Generating answer...")}</Typography>
                           </Stack>
                         </Box>
                       </Box>
@@ -206,7 +207,7 @@ export function TravelAssistantPage() {
                       <Stack spacing={2} alignItems="center" sx={{ py: 8 }}>
                         <AssistantIcon color="primary" fontSize="large" />
                         <Typography color="text.secondary" textAlign="center">
-                          {emptyChatText}
+                          {t("Ask a question to start planning your trip.")}
                         </Typography>
                       </Stack>
                     ) : null}
@@ -217,7 +218,7 @@ export function TravelAssistantPage() {
 
                 <Stack component="form" onSubmit={handleSubmit} direction={{ xs: "column", md: "row" }} spacing={1.5}>
                   <TextField
-                    label="Message"
+                    label={t("Message")}
                     value={message}
                     onChange={(event) => setMessage(event.target.value)}
                     disabled={isLoading}
@@ -232,7 +233,7 @@ export function TravelAssistantPage() {
                     disabled={isLoading || !message.trim()}
                     sx={{ minWidth: 140, alignSelf: { md: "stretch" } }}
                   >
-                    Send
+                    {t("Send")}
                   </Button>
                 </Stack>
               </Stack>

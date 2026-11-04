@@ -18,8 +18,9 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { PassengerManager } from "../components/PassengerManager";
+import { useI18n } from "../i18n/I18nContext.jsx";
 
-function ProfileField({ icon, label, value }) {
+function ProfileField({ icon, label, value, t }) {
   return (
     <Stack
       direction="row"
@@ -49,7 +50,7 @@ function ProfileField({ icon, label, value }) {
           {label}
         </Typography>
         <Typography variant="h6" sx={{ overflowWrap: "anywhere" }}>
-          {value || "Not specified"}
+          {value || t("Not specified")}
         </Typography>
       </Box>
     </Stack>
@@ -58,6 +59,7 @@ function ProfileField({ icon, label, value }) {
 
 export function ProfilePage() {
   const { authorizedGet, authorizedPost, authorizedDelete, isAuthenticated, user } = useAuth();
+  const { codeLabel, t } = useI18n();
   const [passengers, setPassengers] = useState([]);
   const [benefits, setBenefits] = useState([]);
   const [passengerError, setPassengerError] = useState("");
@@ -170,7 +172,7 @@ export function ProfilePage() {
                       color="primary.main"
                       sx={{ letterSpacing: "0.16em", fontWeight: 700 }}
                     >
-                      Profile
+                      {t("Profile")}
                     </Typography>
                   </Stack>
                   <Typography variant="h4" sx={{ overflowWrap: "anywhere" }}>
@@ -178,7 +180,7 @@ export function ProfilePage() {
                   </Typography>
                 </Box>
 
-                <Chip color="primary" label={user?.role || "USER"} />
+                <Chip color="primary" label={codeLabel("role", user?.role || "USER")} />
               </Stack>
             </CardContent>
           </Card>
@@ -187,7 +189,7 @@ export function ProfilePage() {
             <CardContent sx={{ p: { xs: 3, md: 4 } }}>
               <Stack spacing={2}>
                 <Box>
-                  <Typography variant="h5">Account details</Typography>
+                  <Typography variant="h5">{t("Account details")}</Typography>
                 </Box>
 
                 <Divider />
@@ -199,10 +201,10 @@ export function ProfilePage() {
                     gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
                   }}
                 >
-                  <ProfileField icon={<PersonIcon />} label="First name" value={user?.firstName} />
-                  <ProfileField icon={<PersonIcon />} label="Last name" value={user?.lastName} />
-                  <ProfileField icon={<EmailIcon />} label="Email" value={user?.email} />
-                  <ProfileField icon={<BadgeIcon />} label="User ID" value={user?.id} />
+                  <ProfileField icon={<PersonIcon />} label={t("First name")} value={user?.firstName} t={t} />
+                  <ProfileField icon={<PersonIcon />} label={t("Last name")} value={user?.lastName} t={t} />
+                  <ProfileField icon={<EmailIcon />} label={t("Email")} value={user?.email} t={t} />
+                  <ProfileField icon={<BadgeIcon />} label={t("User ID")} value={user?.id} t={t} />
                 </Box>
               </Stack>
             </CardContent>
@@ -213,7 +215,7 @@ export function ProfilePage() {
               {isLoadingPassengers ? (
                 <Stack spacing={2} alignItems="center" sx={{ py: 4 }}>
                   <CircularProgress />
-                  <Typography color="text.secondary">Loading passengers...</Typography>
+                  <Typography color="text.secondary">{t("Loading passengers...")}</Typography>
                 </Stack>
               ) : (
                 <PassengerManager

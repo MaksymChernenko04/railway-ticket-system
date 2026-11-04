@@ -7,6 +7,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { WelcomePage } from "./pages/WelcomePage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { AdminReferencesPage } from "./pages/AdminReferencesPage.jsx";
 import { AdminStationsPage } from "./pages/AdminStationsPage";
 import { AdminRoutesPage } from "./pages/AdminRoutesPage.jsx";
 import { AdminRouteStopsPage } from "./pages/AdminRouteStopsPage.jsx";
@@ -49,10 +50,38 @@ export default function App() {
         }
       >
         <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/trips/search" element={<SearchTripsPage />} />
-        <Route path="/assistant" element={<TravelAssistantPage />} />
-        <Route path="/trips/:tripId/seats" element={<SelectSeatsPage />} />
-        <Route path="/payments/:paymentId" element={<PaymentPage />} />
+        <Route
+          path="/trips/search"
+          element={
+            <ProtectedRoute forbiddenRole="ADMIN">
+              <SearchTripsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/assistant"
+          element={
+            <ProtectedRoute forbiddenRole="ADMIN">
+              <TravelAssistantPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/trips/:tripId/seats"
+          element={
+            <ProtectedRoute forbiddenRole="ADMIN">
+              <SelectSeatsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payments/:paymentId"
+          element={
+            <ProtectedRoute forbiddenRole="ADMIN">
+              <PaymentPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/tickets"
           element={
@@ -77,6 +106,7 @@ export default function App() {
           </ProtectedRoute>
         }
       >
+        <Route path="/admin/references" element={<AdminReferencesPage />} />
         <Route path="/admin/stations" element={<AdminStationsPage />} />
         <Route path="/admin/routes" element={<AdminRoutesPage />} />
         <Route path="/admin/route-stops" element={<AdminRouteStopsPage />} />
