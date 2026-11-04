@@ -24,8 +24,9 @@ public class Train {
     @JoinColumn(name = "type_code", nullable = false)
     private TrainType type;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 50)
     private String number;
 
+    @Column(length = 100)
     private String name;
 }

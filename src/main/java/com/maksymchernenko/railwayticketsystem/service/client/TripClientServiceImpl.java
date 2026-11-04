@@ -55,8 +55,17 @@ public class TripClientServiceImpl implements TripClientService {
                 .orElseThrow(() -> new EntityNotFoundException("Destination station not found: " + request.destinationStationId()));
 
         ZoneId originZone = ZoneId.of(originStation.getTimezone());
+        Instant departureFromUtc = request.travelDate().atStartOfDay(originZone).toInstant();
+        Instant departureToUtc = request.travelDate().plusDays(1).atStartOfDay(originZone).toInstant();
+        Instant nowUtc = Instant.now();
 
-        return tripRepository.findTripsContainingSegment(request.originStationId(), request.destinationStationId())
+        return tripRepository.findTripsContainingSegmentDepartingBetween(
+                        request.originStationId(),
+                        request.destinationStationId(),
+                        departureFromUtc,
+                        departureToUtc,
+                        nowUtc
+                )
                 .stream()
                 .map(trip -> toSearchResponse(trip, originZone, request))
                 .filter(Objects::nonNull)
@@ -83,7 +92,7 @@ public class TripClientServiceImpl implements TripClientService {
             throw new TripClientValidationException("Start trip stop must be before end trip stop");
         }
 
-        Set<Integer> occupiedTripSeatIds = Set.copyOf(ticketRepository.findOccupiedTripSeatIdsForSegment(
+        Set<Long> occupiedTripSeatIds = Set.copyOf(ticketRepository.findOccupiedTripSeatIdsForSegment(
                 tripId,
                 startDepartureOffset,
                 endArrivalOffset,
@@ -164,7 +173,7 @@ public class TripClientServiceImpl implements TripClientService {
 
     private TripCarSeatAvailabilityResponse toCarSeatAvailabilityResponse(
             TripCar tripCar,
-            Set<Integer> occupiedTripSeatIds
+            Set<Long> occupiedTripSeatIds
     ) {
         Car car = tripCar.getCar();
         List<TripSeatAvailabilityResponse> seats = tripCar.getTripSeats().stream()
@@ -185,7 +194,7 @@ public class TripClientServiceImpl implements TripClientService {
 
     private TripSeatAvailabilityResponse toSeatAvailabilityResponse(
             TripSeat tripSeat,
-            Set<Integer> occupiedTripSeatIds
+            Set<Long> occupiedTripSeatIds
     ) {
         Seat seat = tripSeat.getSeat();
 

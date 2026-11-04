@@ -29,7 +29,7 @@ public class Seat {
     @JoinColumn(name = "car_id", nullable = false)
     private Car car;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
     private String number;
 
     @Column(name = "`row`", nullable = false)
@@ -39,6 +39,6 @@ public class Seat {
     private Integer column;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "ENUM('FORWARD','BACKWARD','SIDEWAYS')")
     private SeatDirection direction;
 }

@@ -36,7 +36,7 @@ public class Order {
     private Instant expiresAtUtc;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "ENUM('PENDING','PAID','CANCELLED','EXPIRED')")
     private Status status;
 
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)

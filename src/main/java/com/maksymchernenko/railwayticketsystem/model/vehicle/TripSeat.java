@@ -17,7 +17,7 @@ public class TripSeat {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @EqualsAndHashCode.Include
-    private Integer id;
+    private Long id;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "trip_car_id", nullable = false)

@@ -28,10 +28,10 @@ public class Payment {
     private Order order;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "ENUM('PROCESSING','SUCCESSFUL','FAILED')")
     private Status status;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private String method;
 
     @Column(nullable = false, precision = 10, scale = 2)

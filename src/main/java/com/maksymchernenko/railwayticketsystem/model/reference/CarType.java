@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 public class CarType {
 
     @Id
+    @Column(length = 30)
     @EqualsAndHashCode.Include
     private String code;
 

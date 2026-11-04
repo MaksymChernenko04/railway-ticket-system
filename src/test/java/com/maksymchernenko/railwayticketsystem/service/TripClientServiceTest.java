@@ -42,6 +42,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -78,7 +79,13 @@ class TripClientServiceTest {
 
         when(stationRepository.findById(10L)).thenReturn(Optional.of(kyiv));
         when(stationRepository.findById(11L)).thenReturn(Optional.of(lviv));
-        when(tripRepository.findTripsContainingSegment(10L, 11L)).thenReturn(List.of(matchingTrip));
+        when(tripRepository.findTripsContainingSegmentDepartingBetween(
+                eq(10L),
+                eq(11L),
+                eq(Instant.parse("2035-06-02T21:00:00Z")),
+                eq(Instant.parse("2035-06-03T21:00:00Z")),
+                any(Instant.class)
+        )).thenReturn(List.of(matchingTrip));
 
         List<TripSearchResponse> result = tripClientService.searchTrips(new TripSearchRequest(
                 10L,
@@ -111,7 +118,13 @@ class TripClientServiceTest {
 
         when(stationRepository.findById(10L)).thenReturn(Optional.of(kyiv));
         when(stationRepository.findById(11L)).thenReturn(Optional.of(lviv));
-        when(tripRepository.findTripsContainingSegment(10L, 11L)).thenReturn(List.of(pastTrip));
+        when(tripRepository.findTripsContainingSegmentDepartingBetween(
+                eq(10L),
+                eq(11L),
+                any(Instant.class),
+                any(Instant.class),
+                any(Instant.class)
+        )).thenReturn(List.of(pastTrip));
 
         List<TripSearchResponse> result = tripClientService.searchTrips(new TripSearchRequest(
                 10L,
@@ -132,7 +145,13 @@ class TripClientServiceTest {
                 .isInstanceOf(TripClientValidationException.class)
                 .hasMessage("Origin and destination stations must be different");
 
-        verify(tripRepository, never()).findTripsContainingSegment(10L, 10L);
+        verify(tripRepository, never()).findTripsContainingSegmentDepartingBetween(
+                eq(10L),
+                eq(10L),
+                any(Instant.class),
+                any(Instant.class),
+                any(Instant.class)
+        );
     }
 
     @Test
@@ -153,16 +172,16 @@ class TripClientServiceTest {
                 eq(Order.Status.PENDING),
                 org.mockito.ArgumentMatchers.any(Instant.class),
                 eq(Ticket.SEAT_BLOCKING_STATUSES)
-        )).thenReturn(List.of(601));
+        )).thenReturn(List.of(601L));
 
         TripAvailableSeatsResponse result = tripClientService.getAvailableSeats(1L, 400L, 401L);
 
         assertThat(result.tripId()).isEqualTo(1L);
         assertThat(result.cars()).hasSize(1);
         assertThat(result.cars().getFirst().seats()).hasSize(2);
-        assertThat(result.cars().getFirst().seats().get(0).tripSeatId()).isEqualTo(600);
+        assertThat(result.cars().getFirst().seats().get(0).tripSeatId()).isEqualTo(600L);
         assertThat(result.cars().getFirst().seats().get(0).available()).isTrue();
-        assertThat(result.cars().getFirst().seats().get(1).tripSeatId()).isEqualTo(601);
+        assertThat(result.cars().getFirst().seats().get(1).tripSeatId()).isEqualTo(601L);
         assertThat(result.cars().getFirst().seats().get(1).available()).isFalse();
     }
 
@@ -206,8 +225,8 @@ class TripClientServiceTest {
                 createTripStop(401L, trip, destinationStop, 360, 365)
         ));
         trip.setTripCars(List.of(createTripCar(500L, trip, car, List.of(
-                createTripSeat(600, createSeat(300L, car, "1A")),
-                createTripSeat(601, createSeat(301L, car, "1B"))
+                createTripSeat(600L, createSeat(300L, car, "1A")),
+                createTripSeat(601L, createSeat(301L, car, "1B"))
         ))));
         return trip;
     }
@@ -298,7 +317,7 @@ class TripClientServiceTest {
         return seat;
     }
 
-    private TripSeat createTripSeat(Integer id, Seat seat) {
+    private TripSeat createTripSeat(Long id, Seat seat) {
         TripSeat tripSeat = new TripSeat();
         tripSeat.setId(id);
         tripSeat.setSeat(seat);

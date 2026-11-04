@@ -3,7 +3,7 @@ package com.maksymchernenko.railwayticketsystem.dto.client;
 import com.maksymchernenko.railwayticketsystem.model.reference.SeatDirection;
 
 public record TripSeatAvailabilityResponse(
-        Integer tripSeatId,
+        Long tripSeatId,
         Long seatId,
         String number,
         String seatTypeCode,

@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 public class Benefit {
 
     @Id
+    @Column(length = 30)
     @EqualsAndHashCode.Include
     private String code;
 

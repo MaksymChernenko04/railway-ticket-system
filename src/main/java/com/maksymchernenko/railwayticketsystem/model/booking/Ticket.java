@@ -47,7 +47,7 @@ public class Ticket {
     private TripSeat tripSeat;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "ENUM('RESERVED','ACTIVE','FINISHED','CANCELLED')")
     private Status status;
 
     @Column(nullable = false, precision = 10, scale = 2)
@@ -60,7 +60,7 @@ public class Ticket {
     @Column(name = "applied_benefit_percent", precision = 5, scale = 2)
     private BigDecimal appliedBenefitPercent;
 
-    @Column(name = "applied_benefit_code")
+    @Column(name = "applied_benefit_code", length = 30)
     private String appliedBenefitCode;
 
     public static final Collection<Status> SEAT_BLOCKING_STATUSES = List.of(Status.RESERVED, Status.ACTIVE);
@@ -69,7 +69,6 @@ public class Ticket {
         RESERVED,
         ACTIVE,
         FINISHED,
-        CANCELLED,
-        RETURNED
+        CANCELLED
     }
 }

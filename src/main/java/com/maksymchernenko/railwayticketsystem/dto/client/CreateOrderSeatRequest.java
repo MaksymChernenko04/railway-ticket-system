@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotNull;
 
 public record CreateOrderSeatRequest(
         @NotNull(message = "Seat is required")
-        Integer tripSeatId,
+        Long tripSeatId,
 
         @NotNull(message = "Passenger is required")
         Long passengerId

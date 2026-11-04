@@ -26,7 +26,7 @@ public class Car {
     @JoinColumn(name = "type_code", nullable = false)
     private CarType type;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 20)
     private String number;
 
     @Column(name = "is_accessible", nullable = false)

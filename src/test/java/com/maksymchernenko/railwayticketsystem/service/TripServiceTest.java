@@ -139,8 +139,8 @@ class TripServiceTest {
             trip.getTripStops().get(0).setId(400L);
             trip.getTripStops().get(1).setId(401L);
             trip.getTripCars().getFirst().setId(500L);
-            trip.getTripCars().getFirst().getTripSeats().get(0).setId(600);
-            trip.getTripCars().getFirst().getTripSeats().get(1).setId(601);
+            trip.getTripCars().getFirst().getTripSeats().get(0).setId(600L);
+            trip.getTripCars().getFirst().getTripSeats().get(1).setId(601L);
             return trip;
         });
 
@@ -264,8 +264,8 @@ class TripServiceTest {
         TripStop secondStop = createTripStop(401L, trip, createRouteStop(101L, route, createStation(11L, "Lviv"), 2), 120, 125);
 
         TripCar tripCar = createTripCar(500L, trip, car, 1, List.of(
-                createTripSeat(600, createSeat(300L, car, "1A")),
-                createTripSeat(601, createSeat(301L, car, "1B"))
+                createTripSeat(600L, createSeat(300L, car, "1A")),
+                createTripSeat(601L, createSeat(301L, car, "1B"))
         ));
 
         trip.setTripStops(List.of(firstStop, secondStop));
@@ -367,7 +367,7 @@ class TripServiceTest {
         return seat;
     }
 
-    private TripSeat createTripSeat(Integer id, Seat seat) {
+    private TripSeat createTripSeat(Long id, Seat seat) {
         TripSeat tripSeat = new TripSeat();
         tripSeat.setId(id);
         tripSeat.setSeat(seat);

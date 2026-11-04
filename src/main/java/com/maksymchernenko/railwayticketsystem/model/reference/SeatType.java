@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 public class SeatType {
 
     @Id
+    @Column(length = 30)
     @EqualsAndHashCode.Include
     private String code;
 

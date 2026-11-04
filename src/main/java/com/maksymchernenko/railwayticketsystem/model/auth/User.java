@@ -28,13 +28,13 @@ public class User {
     @JoinColumn(name = "role_name")
     private Role role;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 255)
     private String email;
 
     @Column(name = "password_hash", nullable = false, length = 68)
     private String passwordHash;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private String provider;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, optional = false)

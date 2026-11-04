@@ -33,9 +33,9 @@ class OrderLifecycleServiceTest {
     private OrderLifecycleServiceImpl orderLifecycleService;
 
     @Test
-    void expireOverduePendingOrdersForUserShouldExpireOrderAndCancelReservedTickets() {
+    void expireOverduePendingOrdersForUserShouldExpireOrderAndCancelActiveTickets() {
         Order order = createOrder(10L, Instant.now().minusSeconds(60));
-        Ticket ticket = createTicket(Ticket.Status.RESERVED);
+        Ticket ticket = createTicket(Ticket.Status.ACTIVE);
 
         when(orderRepository.findByUserIdAndStatusAndExpiresAtUtcLessThanEqual(
                 any(Long.class),

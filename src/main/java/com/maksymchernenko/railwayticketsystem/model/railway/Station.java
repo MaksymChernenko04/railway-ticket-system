@@ -20,16 +20,17 @@ public class Station {
     @EqualsAndHashCode.Include
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String name;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "country_code", nullable = false)
     private Country country;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private String timezone;
 
+    @Column(length = 255)
     private String address;
 
     @Column(name = "is_accessible", nullable = false)

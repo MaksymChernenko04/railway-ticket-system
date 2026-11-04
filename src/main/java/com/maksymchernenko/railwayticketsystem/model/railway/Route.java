@@ -23,9 +23,10 @@ public class Route {
     @EqualsAndHashCode.Include
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 20)
     private String number;
 
+    @Column(length = 255)
     private String name;
 
     @Column(name = "base_price", nullable = false, precision = 10, scale = 2)

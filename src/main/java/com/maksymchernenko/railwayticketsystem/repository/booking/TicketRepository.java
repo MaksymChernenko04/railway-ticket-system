@@ -135,7 +135,9 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     @Query("""
             select
+                startStop.routeStop.station.id as startStationId,
                 startStop.routeStop.station.name as startStationName,
+                endStop.routeStop.station.id as endStationId,
                 endStop.routeStop.station.name as endStationName,
                 t.currency.code as currencyCode,
                 count(t.id) as ticketCount,
@@ -149,7 +151,8 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
               and o.createdAtUtc >= :dateFrom
               and o.createdAtUtc < :dateTo
               and (:routeId is null or startStop.trip.route.id = :routeId)
-            group by startStop.routeStop.station.name, endStop.routeStop.station.name, t.currency.code
+            group by startStop.routeStop.station.id, startStop.routeStop.station.name,
+                     endStop.routeStop.station.id, endStop.routeStop.station.name, t.currency.code
             order by count(t.id) desc, sum(t.price) desc
             """)
     List<PopularSegmentRow> findPopularSegments(
@@ -197,7 +200,7 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
               and t.startTripStop.departureOffsetMinutes < :requestedEndArrivalOffsetMinutes
               and :requestedStartDepartureOffsetMinutes < t.endTripStop.arrivalOffsetMinutes
             """)
-    List<Integer> findOccupiedTripSeatIdsForSegment(
+    List<Long> findOccupiedTripSeatIdsForSegment(
             @Param("tripId") Long tripId,
             @Param("requestedStartDepartureOffsetMinutes") Integer requestedStartDepartureOffsetMinutes,
             @Param("requestedEndArrivalOffsetMinutes") Integer requestedEndArrivalOffsetMinutes,
@@ -238,7 +241,11 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     }
 
     interface PopularSegmentRow {
+        Long getStartStationId();
+
         String getStartStationName();
+
+        Long getEndStationId();
 
         String getEndStationName();
 

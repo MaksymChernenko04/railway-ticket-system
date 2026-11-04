@@ -76,7 +76,7 @@ public class OrderClientServiceImpl implements OrderClientService {
         List<CreateOrderSeatRequest> requestedSeats = request.seats();
         validateUniqueSelections(requestedSeats);
 
-        Map<Integer, TripSeat> tripSeatsById = trip.getTripCars().stream()
+        Map<Long, TripSeat> tripSeatsById = trip.getTripCars().stream()
                 .flatMap(tripCar -> tripCar.getTripSeats().stream())
                 .collect(Collectors.toMap(TripSeat::getId, Function.identity()));
         List<TripSeat> selectedSeats = requestedSeats.stream()
@@ -89,7 +89,7 @@ public class OrderClientServiceImpl implements OrderClientService {
                 })
                 .toList();
 
-        Set<Integer> occupiedTripSeatIds = Set.copyOf(ticketRepository.findOccupiedTripSeatIdsForSegment(
+        Set<Long> occupiedTripSeatIds = Set.copyOf(ticketRepository.findOccupiedTripSeatIdsForSegment(
                 trip.getId(),
                 startStop.getDepartureOffsetMinutes(),
                 endStop.getArrivalOffsetMinutes(),
@@ -116,7 +116,7 @@ public class OrderClientServiceImpl implements OrderClientService {
         order.setTotalAmount(BigDecimal.ZERO);
         Order savedOrder = orderRepository.save(order);
 
-        Map<Integer, TripSeat> selectedSeatById = selectedSeats.stream()
+        Map<Long, TripSeat> selectedSeatById = selectedSeats.stream()
                 .collect(Collectors.toMap(TripSeat::getId, Function.identity()));
         List<Ticket> tickets = requestedSeats.stream()
                 .map(selection -> createTicket(
@@ -251,7 +251,7 @@ public class OrderClientServiceImpl implements OrderClientService {
     }
 
     private void validateUniqueSelections(List<CreateOrderSeatRequest> seats) {
-        Set<Integer> seatIds = new HashSet<>();
+        Set<Long> seatIds = new HashSet<>();
         Set<Long> passengerIds = new HashSet<>();
         for (CreateOrderSeatRequest seat : seats) {
             if (!seatIds.add(seat.tripSeatId())) {

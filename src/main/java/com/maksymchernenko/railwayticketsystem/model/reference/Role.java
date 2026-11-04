@@ -12,6 +12,7 @@ import lombok.*;
 public class Role {
 
     @Id
+    @Column(length = 30)
     @EqualsAndHashCode.Include
     private String name;
 }

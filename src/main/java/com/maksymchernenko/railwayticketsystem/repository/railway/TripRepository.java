@@ -28,6 +28,36 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
             @Param("destinationStationId") Long destinationStationId
     );
 
+    @Query(value = """
+            select tr.*
+            from route_stop origin_route_stop
+            join route_stop destination_route_stop
+                on destination_route_stop.route_id = origin_route_stop.route_id
+               and destination_route_stop.ordinal > origin_route_stop.ordinal
+            join trip tr on tr.route_id = origin_route_stop.route_id
+            join trip_stop origin_stop
+                on origin_stop.trip_id = tr.id
+               and origin_stop.route_stop_id = origin_route_stop.id
+            join trip_stop destination_stop
+                on destination_stop.trip_id = tr.id
+               and destination_stop.route_stop_id = destination_route_stop.id
+            where origin_route_stop.station_id = :originStationId
+              and destination_route_stop.station_id = :destinationStationId
+              and tr.departure_at_utc < :departureToUtc
+              and origin_stop.departure_offset_minutes < destination_stop.arrival_offset_minutes
+              and timestampadd(minute, origin_stop.departure_offset_minutes, tr.departure_at_utc) >= :departureFromUtc
+              and timestampadd(minute, origin_stop.departure_offset_minutes, tr.departure_at_utc) < :departureToUtc
+              and timestampadd(minute, origin_stop.departure_offset_minutes, tr.departure_at_utc) > :nowUtc
+            order by timestampadd(minute, origin_stop.departure_offset_minutes, tr.departure_at_utc) asc
+            """, nativeQuery = true)
+    List<Trip> findTripsContainingSegmentDepartingBetween(
+            @Param("originStationId") Long originStationId,
+            @Param("destinationStationId") Long destinationStationId,
+            @Param("departureFromUtc") Instant departureFromUtc,
+            @Param("departureToUtc") Instant departureToUtc,
+            @Param("nowUtc") Instant nowUtc
+    );
+
     @Query("""
             select tr
             from Trip tr
